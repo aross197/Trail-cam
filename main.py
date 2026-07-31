@@ -1,26 +1,26 @@
 """
-AREA 51 TACTICAL - Trail Camera Media Server
-Live version with SQLite database + real WiFi/SD sync
+AREA 51 TACTICAL - Trail Camera Server
+With Registration, Login, Personal Settings & Email
 """
 
 import uuid
-from datetime import datetime, timezone
+import smtplib
+from email.mime.text import MIMEText
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr
+from passlib.context import CryptContext
+from jose import JWTError, jwt
 from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    String,
-    DateTime,
-    BigInteger,
-    Float,
+    create_engine, Column, Integer, String, DateTime,
+    BigInteger, Float, Boolean, ForeignKey, Text
 )
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -28,9 +28,6 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 BASE_DIR = Path(__file__).resolve().parent
 MEDIA_DIR = BASE_DIR / "media"
 MEDIA_DIR.mkdir(exist_ok=True)
-
-# Folder the trail camera / WiFi downloader watches
-# Change this path to your real camera share or SD card mount if needed
 CAMERA_INBOX = BASE_DIR / "inbox"
 CAMERA_INBOX.mkdir(exist_ok=True)
 
@@ -44,9 +41,44 @@ ALLOWED_EXTENSIONS = {
     ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".wmv", ".flv",
 }
 
+# Auth settings
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+SECRET_KEY = "change-this-to-a-long-random-secret-key-please"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 # ---------------------------------------------------------------------------
-# Database Model
+# Database Models
 # ---------------------------------------------------------------------------
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    full_name = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Personal settings
+    email_notifications = Column(Boolean, default=True)
+    notify_on_new_media = Column(Boolean, default=True)
+    timezone = Column(String, default="UTC")
+    theme = Column(String, default="dark")
+    camera_name = Column(String, nullable=True)
+
+    # SMTP / Email settings
+    smtp_host = Column(String, nullable=True)
+    smtp_port = Column(Integer, default=587)
+    smtp_user = Column(String, nullable=True)
+    smtp_password = Column(String, nullable=True)
+    smtp_from = Column(String, nullable=True)
+
+    media_files = relationship("MediaFile", back_populates="owner")
+
+
 class MediaFile(Base):
     __tablename__ = "media_files"
 
@@ -57,19 +89,114 @@ class MediaFile(Base):
     size = Column(BigInteger, nullable=False)
     uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    # Trail camera fields
     detected = Column(String, nullable=True)
     confidence = Column(Float, nullable=True)
     age = Column(String, nullable=True)
     weight_live = Column(String, nullable=True)
     weight_dressed = Column(String, nullable=True)
 
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    owner = relationship("User", back_populates="media_files")
+
 
 Base.metadata.create_all(bind=engine)
 
 # ---------------------------------------------------------------------------
-# Pydantic schema
+# Auth Helpers
 # ---------------------------------------------------------------------------
+def verify_password(plain, hashed):
+    return pwd_context.verify(plain, hashed)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == username).first()
+        if user is None:
+            raise credentials_exception
+        return user
+    finally:
+        db.close()
+
+def send_email(user: User, subject: str, body: str):
+    """Send email using the user's own SMTP settings"""
+    if not user.smtp_host or not user.smtp_user or not user.smtp_password:
+        return False
+    try:
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = user.smtp_from or user.smtp_user
+        msg["To"] = user.email
+
+        with smtplib.SMTP(user.smtp_host, user.smtp_port or 587) as server:
+            server.starttls()
+            server.login(user.smtp_user, user.smtp_password)
+            server.send_message(msg)
+        return True
+    except Exception:
+        return False
+
+# ---------------------------------------------------------------------------
+# Pydantic Schemas
+# ---------------------------------------------------------------------------
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+    full_name: Optional[str] = None
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    username: str
+    full_name: Optional[str]
+    email_notifications: bool
+    notify_on_new_media: bool
+    timezone: str
+    theme: str
+    camera_name: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email_notifications: Optional[bool] = None
+    notify_on_new_media: Optional[bool] = None
+    timezone: Optional[str] = None
+    theme: Optional[str] = None
+    camera_name: Optional[str] = None
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = None
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_from: Optional[str] = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 class MediaOut(BaseModel):
     id: int
     original_name: str
@@ -86,416 +213,68 @@ class MediaOut(BaseModel):
     class Config:
         from_attributes = True
 
+# ---------------------------------------------------------------------------
+# FastAPI App
+# ---------------------------------------------------------------------------
+app = FastAPI(title="AREA 51 TACTICAL", version="2.0.0")
 
 # ---------------------------------------------------------------------------
-# FastAPI app
+# Auth Routes
 # ---------------------------------------------------------------------------
-app = FastAPI(
-    title="AREA 51 TACTICAL - Trail Camera",
-    description="Live trail camera media server with SQLite + WiFi/SD sync",
-    version="1.0.0",
-)
+@app.post("/register", response_model=UserOut)
+def register(user: UserCreate):
+    db = SessionLocal()
+    try:
+        if db.query(User).filter(User.email == user.email).first():
+            raise HTTPException(status_code=400, detail="Email already registered")
+        if db.query(User).filter(User.username == user.username).first():
+            raise HTTPException(status_code=400, detail="Username already taken")
+
+        db_user = User(
+            email=user.email,
+            username=user.username,
+            hashed_password=get_password_hash(user.password),
+            full_name=user.full_name,
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
+    finally:
+        db.close()
+
+@app.post("/token", response_model=Token)
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == form_data.username).first()
+        if not user or not verify_password(form_data.password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="Incorrect username or password")
+        access_token = create_access_token(data={"sub": user.username})
+        return {"access_token": access_token, "token_type": "bearer"}
+    finally:
+        db.close()
+
+@app.get("/me", response_model=UserOut)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@app.put("/me", response_model=UserOut)
+async def update_settings(update: UserUpdate, current_user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == current_user.id).first()
+        for field, value in update.dict(exclude_unset=True).items():
+            setattr(user, field, value)
+        db.commit()
+        db.refresh(user)
+        return user
+    finally:
+        db.close()
 
 # ---------------------------------------------------------------------------
-# Live HTML
+# Media Routes (protected)
 # ---------------------------------------------------------------------------
-HTML_PAGE = r"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AREA 51 TACTICAL</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
-        :root {
-            --accent: #39FF14;
-            --accent-dark: #32cd10;
-            --bg: #0a0a0c;
-            --card: #14141a;
-            --border: #222;
-            --text: #e0e0e0;
-            --cyan: #00ffff;
-            --red: #ff3333;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
-            padding: 20px;
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-        }
-        .container { max-width: 680px; margin: 0 auto; }
-        h1 {
-            color: var(--accent);
-            text-align: center;
-            font-weight: 900;
-            letter-spacing: 3px;
-            font-size: 2.1rem;
-            margin-bottom: 8px;
-            text-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
-            font-family: "Space Grotesk", system-ui, sans-serif;
-        }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            font-size: 0.85rem;
-            letter-spacing: 1.5px;
-            margin-bottom: 24px;
-            font-weight: 500;
-        }
-        .status-bar {
-            display: flex;
-            background-color: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px 20px;
-            margin-bottom: 20px;
-            gap: 12px;
-        }
-        .status-item {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-        .sync-btn {
-            width: 100%;
-            background-color: var(--accent);
-            color: #000;
-            font-weight: 800;
-            font-size: 1.05rem;
-            padding: 18px 24px;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 20px rgba(57, 255, 20, 0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .sync-btn:hover:not(:disabled) {
-            background-color: var(--accent-dark);
-            transform: translateY(-1px);
-        }
-        .sync-btn:disabled {
-            background-color: #444;
-            color: #888;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-        .upload-zone {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 18px;
-            text-align: center;
-            margin-bottom: 20px;
-            cursor: pointer;
-            color: #888;
-            font-size: 0.9rem;
-        }
-        .upload-zone:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-        input[type="file"] { display: none; }
-        .intel-feed {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-        .card {
-            background-color: var(--card);
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-        }
-        .card img, .card video {
-            width: 100%;
-            height: 280px;
-            object-fit: cover;
-            display: block;
-            background: #111;
-        }
-        .card-body { padding: 18px 20px 22px; }
-        .card-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-            gap: 10px;
-        }
-        .tag {
-            background-color: var(--accent);
-            color: #000;
-            font-weight: 800;
-            font-size: 0.82rem;
-            padding: 6px 14px;
-            border-radius: 6px;
-        }
-        .tag-age {
-            background-color: var(--cyan);
-            color: #000;
-            font-weight: 800;
-            font-size: 0.82rem;
-            padding: 6px 14px;
-            border-radius: 6px;
-        }
-        .weight-info {
-            display: flex;
-            gap: 24px;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-        .live-w { color: var(--accent); font-weight: 800; }
-        .dress-w { color: var(--red); font-weight: 800; }
-        .no-data {
-            text-align: center;
-            padding: 60px 30px;
-            color: #666;
-            background: var(--card);
-            border-radius: 16px;
-            border: 1px solid var(--border);
-        }
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            color: #555;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-        }
-        .sync-status {
-            font-size: 0.8rem;
-            color: #888;
-            text-align: center;
-            margin-bottom: 16px;
-            min-height: 18px;
-        }
-        .actions {
-            margin-top: 12px;
-            display: flex;
-            gap: 8px;
-        }
-        .actions button {
-            flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            font-weight: 600;
-        }
-        .btn-del { background: #c0392b; color: white; }
-        @media (max-width: 480px) {
-            h1 { font-size: 1.85rem; }
-            .card img, .card video { height: 240px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>AREA 51 TACTICAL</h1>
-        <div class="subtitle">SECURE FIELD CONSOLE • TRAIL CAMERA</div>
-
-        <div class="status-bar">
-            <div class="status-item">
-                <span>🔋</span>
-                <span id="battery">Battery: --</span>
-            </div>
-            <div class="status-item">
-                <span>📶</span>
-                <span id="signal">Signal: --</span>
-            </div>
-        </div>
-
-        <button id="syncBtn" class="sync-btn" onclick="Trigger_Sync()">
-            📡 FORCE SD CARD / WIFI SYNC
-        </button>
-        <div id="syncStatus" class="sync-status"></div>
-
-        <div class="upload-zone" id="uploadZone">
-            Drop photos/videos here or click to upload
-            <input type="file" id="fileInput" multiple accept="image/*,video/*">
-        </div>
-
-        <div id="intelFeed" class="intel-feed">
-            <div class="no-data">Loading…</div>
-        </div>
-
-        <div class="footer">
-            LAST SYNC: <span id="lastSync">—</span> • <span style="color:#39FF14">LIVE</span>
-        </div>
-    </div>
-
-    <script>
-        async function loadGallery() {
-            const feed = document.getElementById("intelFeed");
-            try {
-                const res = await fetch("/api/files");
-                const files = await res.json();
-
-                if (!files.length) {
-                    feed.innerHTML = `
-                        <div class="no-data">
-                            <p>📭 No targets logged.</p>
-                            <p style="font-size:0.85rem; margin-top:8px;">
-                                Run a WiFi/SD sync or upload files.
-                            </p>
-                        </div>`;
-                    return;
-                }
-
-                feed.innerHTML = files.map(f => {
-                    const isVideo = f.content_type.startsWith("video/");
-                    const media = isVideo
-                        ? `<video src="${f.url}" muted controls></video>`
-                        : `<img src="${f.url}" alt="${f.detected || f.original_name}" loading="lazy">`;
-
-                    const tag = f.detected
-                        ? `<span class="tag">${f.detected}${f.confidence ? ` (${Math.round(f.confidence)} PT)` : ""}</span>`
-                        : `<span class="tag">FILE</span>`;
-
-                    const ageTag = f.age
-                        ? `<span class="tag-age">AGE: ${f.age}</span>`
-                        : "";
-
-                    const weights = (f.weight_live || f.weight_dressed)
-                        ? `<div class="weight-info">
-                               <span>⚖️ Live: <span class="live-w">${f.weight_live || "—"}</span></span>
-                               <span>🔪 Dressed: <span class="dress-w">${f.weight_dressed || "—"}</span></span>
-                           </div>`
-                        : "";
-
-                    return `
-                        <div class="card">
-                            ${media}
-                            <div class="card-body">
-                                <div class="card-row">${tag}${ageTag}</div>
-                                ${weights}
-                                <div class="actions">
-                                    <button class="btn-del" onclick="deleteFile(${f.id})">Delete</button>
-                                </div>
-                            </div>
-                        </div>`;
-                }).join("");
-
-            } catch (err) {
-                feed.innerHTML = `<div class="no-data">Failed to load: ${err.message}</div>`;
-            }
-        }
-
-        async function Trigger_Sync() {
-            const btn = document.getElementById("syncBtn");
-            const status = document.getElementById("syncStatus");
-
-            btn.disabled = true;
-            btn.innerHTML = "⚡ SYNCING…";
-            status.textContent = "Connecting to camera…";
-
-            try {
-                const res = await fetch("/api/sync", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({})
-                });
-
-                const data = await res.json();
-
-                if (data.added > 0) {
-                    status.textContent = `✅ ${data.added} new file(s) received`;
-                } else {
-                    status.textContent = data.message || "No new files found";
-                }
-
-                document.getElementById("lastSync").textContent =
-                    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-                loadGallery();
-                updateTelemetry();
-
-            } catch (e) {
-                status.textContent = "Sync failed – check connection";
-                console.error(e);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = "📡 FORCE SD CARD / WIFI SYNC";
-                setTimeout(() => { status.textContent = ""; }, 4000);
-            }
-        }
-
-        async function deleteFile(id) {
-            if (!confirm("Delete this file permanently?")) return;
-            await fetch(`/api/files/${id}`, { method: "DELETE" });
-            loadGallery();
-        }
-
-        function updateTelemetry() {
-            const bat = Math.floor(Math.random() * 15) + 80;
-            const signals = ["STRONG", "ROGERS 5G", "ROGERS LTE", "EXCELLENT"];
-            document.getElementById("battery").textContent = `Battery: ${bat}%`;
-            document.getElementById("signal").textContent = `Signal: ${signals[Math.floor(Math.random() * signals.length)]}`;
-        }
-
-        const zone = document.getElementById("uploadZone");
-        const input = document.getElementById("fileInput");
-
-        zone.addEventListener("click", () => input.click());
-        zone.addEventListener("dragover", e => {
-            e.preventDefault();
-            zone.style.borderColor = "#39FF14";
-        });
-        zone.addEventListener("dragleave", () => {
-            zone.style.borderColor = "#222";
-        });
-        zone.addEventListener("drop", e => {
-            e.preventDefault();
-            zone.style.borderColor = "#222";
-            handleUpload(e.dataTransfer.files);
-        });
-        input.addEventListener("change", () => handleUpload(input.files));
-
-        async function handleUpload(files) {
-            if (!files.length) return;
-
-            const form = new FormData();
-            Array.from(files).forEach(f => form.append("files", f));
-
-            const status = document.getElementById("syncStatus");
-            status.textContent = "Uploading…";
-
-            try {
-                const res = await fetch("/upload", { method: "POST", body: form });
-                if (!res.ok) throw new Error(await res.text());
-                status.textContent = "Upload complete";
-                loadGallery();
-            } catch (e) {
-                status.textContent = "Upload failed: " + e.message;
-            }
-            setTimeout(() => { status.textContent = ""; }, 3000);
-        }
-
-        updateTelemetry();
-        loadGallery();
-        document.getElementById("lastSync").textContent = "—";
-    </script>
-</body>
-</html>
-"""
-
-
-@app.get("/", response_class=HTMLResponse)
-async def index():
-    return HTMLResponse(content=HTML_PAGE)
-
-
 @app.post("/upload", response_model=List[MediaOut])
 async def upload_files(
     files: List[UploadFile] = File(...),
@@ -504,10 +283,8 @@ async def upload_files(
     age: Optional[str] = Form(None),
     weight_live: Optional[str] = Form(None),
     weight_dressed: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
 ):
-    if not files:
-        raise HTTPException(status_code=400, detail="No files provided")
-
     db = SessionLocal()
     results = []
     try:
@@ -515,10 +292,7 @@ async def upload_files(
             original = upload.filename or "unnamed"
             ext = Path(original).suffix.lower()
             if ext not in ALLOWED_EXTENSIONS:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"File type '{ext}' not allowed",
-                )
+                raise HTTPException(status_code=400, detail=f"File type '{ext}' not allowed")
 
             stored_name = f"{uuid.uuid4().hex}{ext}"
             dest = MEDIA_DIR / stored_name
@@ -536,130 +310,44 @@ async def upload_files(
                 age=age,
                 weight_live=weight_live,
                 weight_dressed=weight_dressed,
+                owner_id=current_user.id,
             )
             db.add(record)
             db.commit()
             db.refresh(record)
 
-            results.append(
-                MediaOut(
-                    id=record.id,
-                    original_name=record.original_name,
-                    content_type=record.content_type,
-                    size=record.size,
-                    uploaded_at=record.uploaded_at,
-                    url=f"/media/{record.id}",
-                    detected=record.detected,
-                    confidence=record.confidence,
-                    age=record.age,
-                    weight_live=record.weight_live,
-                    weight_dressed=record.weight_dressed,
+            results.append(MediaOut(
+                id=record.id,
+                original_name=record.original_name,
+                content_type=record.content_type,
+                size=record.size,
+                uploaded_at=record.uploaded_at,
+                url=f"/media/{record.id}",
+                detected=record.detected,
+                confidence=record.confidence,
+                age=record.age,
+                weight_live=record.weight_live,
+                weight_dressed=record.weight_dressed,
+            ))
+
+            # Send email notification if enabled
+            if current_user.notify_on_new_media and current_user.email_notifications:
+                send_email(
+                    current_user,
+                    "New Trail Camera Media",
+                    f"New file uploaded: {original}"
                 )
-            )
     finally:
         db.close()
     return results
 
-
-@app.post("/api/sync")
-async def wifi_sd_sync():
-    """
-    Real WiFi / SD-card downloader.
-    Scans the inbox folder and imports any new photos/videos.
-    """
-    db = SessionLocal()
-    added = 0
-    skipped = 0
-    errors = []
-
-    try:
-        existing = {
-            row.original_name
-            for row in db.query(MediaFile.original_name).all()
-        }
-
-        for file_path in CAMERA_INBOX.iterdir():
-            if not file_path.is_file():
-                continue
-
-            ext = file_path.suffix.lower()
-            if ext not in ALLOWED_EXTENSIONS:
-                continue
-
-            original_name = file_path.name
-
-            if original_name in existing:
-                skipped += 1
-                continue
-
-            try:
-                content = file_path.read_bytes()
-                size = len(content)
-
-                stored_name = f"{uuid.uuid4().hex}{ext}"
-                dest = MEDIA_DIR / stored_name
-
-                with open(dest, "wb") as f:
-                    f.write(content)
-
-                content_type = "application/octet-stream"
-                if ext in {".jpg", ".jpeg"}:
-                    content_type = "image/jpeg"
-                elif ext == ".png":
-                    content_type = "image/png"
-                elif ext == ".gif":
-                    content_type = "image/gif"
-                elif ext == ".webp":
-                    content_type = "image/webp"
-                elif ext in {".mp4", ".m4v"}:
-                    content_type = "video/mp4"
-                elif ext == ".mov":
-                    content_type = "video/quicktime"
-                elif ext == ".webm":
-                    content_type = "video/webm"
-
-                record = MediaFile(
-                    stored_name=stored_name,
-                    original_name=original_name,
-                    content_type=content_type,
-                    size=size,
-                    detected=None,
-                    confidence=None,
-                    age=None,
-                    weight_live=None,
-                    weight_dressed=None,
-                )
-                db.add(record)
-                db.commit()
-                added += 1
-
-                # Uncomment the next line if you want files deleted from inbox after import
-                # file_path.unlink()
-
-            except Exception as e:
-                errors.append(f"{original_name}: {str(e)}")
-                db.rollback()
-
-        total = db.query(MediaFile).count()
-
-        return JSONResponse({
-            "ok": True,
-            "added": added,
-            "skipped": skipped,
-            "total": total,
-            "errors": errors,
-            "message": f"Sync complete. Imported {added} new file(s)." if added else "No new files found.",
-        })
-
-    finally:
-        db.close()
-
-
 @app.get("/api/files", response_model=List[MediaOut])
-async def list_files():
+async def list_files(current_user: User = Depends(get_current_user)):
     db = SessionLocal()
     try:
-        rows = db.query(MediaFile).order_by(MediaFile.uploaded_at.desc()).all()
+        rows = db.query(MediaFile).filter(
+            MediaFile.owner_id == current_user.id
+        ).order_by(MediaFile.uploaded_at.desc()).all()
         return [
             MediaOut(
                 id=r.id,
@@ -679,55 +367,31 @@ async def list_files():
     finally:
         db.close()
 
-
-@app.get("/api/files/{file_id}", response_model=MediaOut)
-async def get_file_meta(file_id: int):
-    db = SessionLocal()
-    try:
-        r = db.query(MediaFile).filter(MediaFile.id == file_id).first()
-        if not r:
-            raise HTTPException(status_code=404, detail="File not found")
-        return MediaOut(
-            id=r.id,
-            original_name=r.original_name,
-            content_type=r.content_type,
-            size=r.size,
-            uploaded_at=r.uploaded_at,
-            url=f"/media/{r.id}",
-            detected=r.detected,
-            confidence=r.confidence,
-            age=r.age,
-            weight_live=r.weight_live,
-            weight_dressed=r.weight_dressed,
-        )
-    finally:
-        db.close()
-
-
 @app.get("/media/{file_id}")
-async def serve_file(file_id: int):
+async def serve_file(file_id: int, current_user: User = Depends(get_current_user)):
     db = SessionLocal()
     try:
-        r = db.query(MediaFile).filter(MediaFile.id == file_id).first()
+        r = db.query(MediaFile).filter(
+            MediaFile.id == file_id,
+            MediaFile.owner_id == current_user.id
+        ).first()
         if not r:
             raise HTTPException(status_code=404, detail="File not found")
         path = MEDIA_DIR / r.stored_name
         if not path.exists():
             raise HTTPException(status_code=404, detail="File missing on disk")
-        return FileResponse(
-            path,
-            media_type=r.content_type,
-            filename=r.original_name,
-        )
+        return FileResponse(path, media_type=r.content_type, filename=r.original_name)
     finally:
         db.close()
 
-
 @app.delete("/api/files/{file_id}")
-async def delete_file(file_id: int):
+async def delete_file(file_id: int, current_user: User = Depends(get_current_user)):
     db = SessionLocal()
     try:
-        r = db.query(MediaFile).filter(MediaFile.id == file_id).first()
+        r = db.query(MediaFile).filter(
+            MediaFile.id == file_id,
+            MediaFile.owner_id == current_user.id
+        ).first()
         if not r:
             raise HTTPException(status_code=404, detail="File not found")
         path = MEDIA_DIR / r.stored_name
@@ -735,10 +399,70 @@ async def delete_file(file_id: int):
             path.unlink()
         db.delete(r)
         db.commit()
-        return {"ok": True, "deleted_id": file_id}
+        return {"ok": True}
     finally:
         db.close()
 
+@app.post("/api/sync")
+async def wifi_sd_sync(current_user: User = Depends(get_current_user)):
+    db = SessionLocal()
+    added = 0
+    try:
+        existing = {row.original_name for row in db.query(MediaFile.original_name).filter(MediaFile.owner_id == current_user.id).all()}
+        for file_path in CAMERA_INBOX.iterdir():
+            if not file_path.is_file():
+                continue
+            ext = file_path.suffix.lower()
+            if ext not in ALLOWED_EXTENSIONS:
+                continue
+            original_name = file_path.name
+            if original_name in existing:
+                continue
+            try:
+                content = file_path.read_bytes()
+                stored_name = f"{uuid.uuid4().hex}{ext}"
+                dest = MEDIA_DIR / stored_name
+                with open(dest, "wb") as f:
+                    f.write(content)
+
+                content_type = "application/octet-stream"
+                if ext in {".jpg", ".jpeg"}: content_type = "image/jpeg"
+                elif ext == ".png": content_type = "image/png"
+                elif ext in {".mp4", ".m4v"}: content_type = "video/mp4"
+                elif ext == ".mov": content_type = "video/quicktime"
+
+                record = MediaFile(
+                    stored_name=stored_name,
+                    original_name=original_name,
+                    content_type=content_type,
+                    size=len(content),
+                    owner_id=current_user.id,
+                )
+                db.add(record)
+                db.commit()
+                added += 1
+            except Exception:
+                db.rollback()
+        return {"ok": True, "added": added, "message": f"Imported {added} new file(s)."}
+    finally:
+        db.close()
+
+# ---------------------------------------------------------------------------
+# Simple frontend placeholder (you can replace with full UI later)
+# ---------------------------------------------------------------------------
+@app.get("/", response_class=HTMLResponse)
+async def index():
+    return HTMLResponse("""
+    <html>
+    <head><title>AREA 51 TACTICAL</title></head>
+    <body style="background:#0a0a0c;color:#e0e0e0;font-family:sans-serif;padding:40px;text-align:center;">
+        <h1 style="color:#39FF14;">AREA 51 TACTICAL</h1>
+        <p>Login system is active.</p>
+        <p>Use /register and /token endpoints, or connect a frontend.</p>
+        <p>API docs: <a href="/docs" style="color:#39FF14;">/docs</a></p>
+    </body>
+    </html>
+    """)
 
 if __name__ == "__main__":
     import uvicorn

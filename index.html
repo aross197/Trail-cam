@@ -1,322 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AREA 51 TACTICAL – TrailCam Connect</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
-    :root {
-      --accent: #39FF14;
-      --accent-dark: #32cd10;
-      --bg: #0a0a0c;
-      --card: #14141a;
-      --border: #222;
-      --text: #e0e0e0;
-      --cyan: #00ffff;
-      --red: #ff3333;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
-      padding: 20px;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-    }
-    .container { max-width: 680px; margin: 0 auto; }
-    h1 {
-      color: var(--accent);
-      text-align: center;
-      font-weight: 900;
-      letter-spacing: 3px;
-      font-size: 2rem;
-      margin-bottom: 6px;
-      text-shadow: 0 0 20px rgba(57,255,20,0.3);
-      font-family: "Space Grotesk", system-ui, sans-serif;
-    }
-    .subtitle {
-      text-align: center;
-      color: #666;
-      font-size: 0.85rem;
-      letter-spacing: 1.5px;
-      margin-bottom: 28px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 22px;
-      margin-bottom: 20px;
-    }
-    .step {
-      display: flex;
-      gap: 14px;
-      margin-bottom: 18px;
-      align-items: flex-start;
-    }
-    .step-num {
-      background: var(--accent);
-      color: #000;
-      font-weight: 800;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      font-size: 0.9rem;
-    }
-    .step-text { flex: 1; font-size: 0.95rem; }
-    .step-text strong { color: var(--accent); }
-    .btn {
-      width: 100%;
-      background: var(--accent);
-      color: #000;
-      font-weight: 800;
-      font-size: 1.05rem;
-      padding: 16px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      margin-top: 8px;
-      box-shadow: 0 4px 20px rgba(57,255,20,0.25);
-    }
-    .btn:disabled { background: #444; color: #888; box-shadow: none; }
-    .btn-secondary {
-      background: #2d3436;
-      color: var(--text);
-      margin-top: 10px;
-    }
-    .status {
-      text-align: center;
-      font-size: 0.85rem;
-      color: #888;
-      min-height: 22px;
-      margin: 12px 0;
-    }
-    .status.ok { color: var(--accent); }
-    .status.err { color: var(--red); }
-    input[type="text"] {
-      width: 100%;
-      background: #0f1117;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 12px 14px;
-      border-radius: 10px;
-      font-size: 1rem;
-      margin: 8px 0 14px;
-    }
-    .note {
-      font-size: 0.8rem;
-      color: #777;
-      margin-top: 12px;
-      line-height: 1.4;
-    }
-    .gallery {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 16px;
-    }
-    .gallery img, .gallery video {
-      width: 100%;
-      height: 140px;
-      object-fit: cover;
-      border-radius: 10px;
-      background: #111;
-    }
-    .hidden { display: none; }
-    .footer {
-      text-align: center;
-      margin-top: 30px;
-      color: #555;
-      font-size: 0.75rem;
-      letter-spacing: 1px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AREA 51 TACTICAL</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #0d1117; 
+            color: #58a6ff; 
+            text-align: center; 
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { 
+            color: #3fb950; 
+            font-family: monospace; 
+            font-size: 28px; 
+            margin-bottom: 4px;
+        }
+        .sub { 
+            color: #8b949e; 
+            font-size: 12px; 
+            letter-spacing: 1.5px; 
+            margin-bottom: 25px; 
+        }
+        .card { 
+            background: #161b22; 
+            border-radius: 12px; 
+            padding: 24px; 
+            max-width: 420px; 
+            margin: 0 auto; 
+            border: 1px solid #30363d; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            color: #c9d1d9; 
+            font-weight: 600; 
+            font-size: 14px;
+        }
+        input[type="text"] { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 8px; 
+            border: 1px solid #30363d; 
+            background: #0d1117; 
+            color: #3fb950; 
+            font-family: monospace;
+            font-size: 18px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            outline: none;
+        }
+        input[type="text"]:focus {
+            border-color: #58a6ff;
+        }
+        .btn { 
+            display: block; 
+            width: 100%; 
+            background: #238636; 
+            color: #ffffff; 
+            border: none; 
+            padding: 16px 0; 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            margin: 12px 0; 
+            text-decoration: none; 
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #2ea043; }
+        .btn-blue { background: #1f6feb; }
+        .btn-blue:hover { background: #388bfd; }
+        .note {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
+
     <h1>AREA 51 TACTICAL</h1>
-    <div class="subtitle">TRAILCAM GO STYLE CONNECTION</div>
+    <div class="sub">DIRECT CAMERA HANDSHAKE PROTOCOL</div>
 
-    <!-- CONNECTION CARD -->
-    <div class="card" id="connectCard">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-text">
-          Turn the camera to <strong>ON</strong> or <strong>TEST</strong> mode.
-          Stand within ~15 m (45 ft).
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-text">
-          On your phone turn on <strong>Bluetooth</strong> and <strong>Wi-Fi</strong>.
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-text">
-          Go to phone <strong>Settings → Wi-Fi</strong>.<br>
-          Look for a network named:<br>
-          <strong>TrailCam_XXXX</strong> or <strong>KJK_XXXX</strong>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-text">
-          Connect to it. Password is usually:<br>
-          <strong>50390235</strong><br>
-          (or the password shown on the camera / in the original app)
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">5</div>
-        <div class="step-text">
-          After the phone is connected to the camera’s Wi-Fi,<br>
-          come back here and press the button below.
-        </div>
-      </div>
+    <div class="card">
+        <label for="cameraIp">Target Camera IP Address:</label>
+        <input type="text" id="cameraIp" value="192.168.1.1" placeholder="192.168.1.1">
 
-      <button class="btn" id="checkBtn" onclick="checkCameraConnection()">
-        📡 I AM CONNECTED – CHECK CAMERA
-      </button>
-      <div class="status" id="status"></div>
+        <!-- Direct browser navigation triggers (Bypasses HTTPS mixed content restrictions) -->
+        <button class="btn" onclick="openLogin()">LAUNCH CAMERA LOGIN</button>
+        <button class="btn btn-blue" onclick="openMediaDir()">OPEN SD CARD DIRECTORY</button>
 
-      <div class="note">
-        This is the exact same process used by Trail Cam Go:<br>
-        Phone joins the camera’s own Wi-Fi hotspot, then talks directly to it.
-      </div>
+        <div class="note">
+            <strong>Usage:</strong> Connect your phone to the camera's local Wi-Fi access point (e.g., <i>TrailCam_XXXX</i>), then tap <b>LAUNCH CAMERA LOGIN</b> to jump directly into the hardware control portal.
+        </div>
     </div>
 
-    <!-- AFTER CONNECTION -->
-    <div class="card hidden" id="cameraCard">
-      <h3 style="color:var(--accent); margin-bottom:12px;">Camera Online</h3>
-      <p style="font-size:0.9rem; margin-bottom:12px;">
-        Camera IP detected / entered:
-      </p>
-      <input type="text" id="camIP" value="192.168.1.1" placeholder="Camera IP">
-      <button class="btn" onclick="loadCameraFiles()">📂 LIST PHOTOS & VIDEOS</button>
-      <button class="btn btn-secondary" onclick="downloadAll()">⬇️ DOWNLOAD ALL TO SERVER</button>
-      <div class="status" id="camStatus"></div>
-      <div class="gallery" id="gallery"></div>
-    </div>
-
-    <div class="footer">
-      AREA 51 TACTICAL • DIRECT CAMERA LINK
-    </div>
-  </div>
-
-  <script>
-    // Common IPs used by many TrailCam / KJK style cameras
-    const COMMON_IPS = [
-      "192.168.1.1",
-      "192.168.0.1",
-      "192.168.4.1",
-      "192.168.8.1",
-      "10.0.0.1"
-    ];
-
-    async function checkCameraConnection() {
-      const status = document.getElementById("status");
-      const btn = document.getElementById("checkBtn");
-      btn.disabled = true;
-      status.textContent = "Scanning for camera…";
-      status.className = "status";
-
-      let found = null;
-
-      for (const ip of COMMON_IPS) {
-        try {
-          // Try a simple HEAD / GET with short timeout
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 1200);
-          const res = await fetch(`http://${ip}/`, {
-            method: "GET",
-            mode: "no-cors",          // many cameras block CORS
-            signal: controller.signal
-          });
-          clearTimeout(timer);
-          found = ip;
-          break;
-        } catch (e) {
-          // continue
+    <script>
+        function getTargetIp() {
+            let rawIp = document.getElementById('cameraIp').value.trim();
+            // Clean up protocol prefixes or trailing slashes if pasted in by mistake
+            let cleanIp = rawIp.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+            return cleanIp || '192.168.1.1';
         }
-      }
 
-      if (found) {
-        status.textContent = `✅ Camera responded at ${found}`;
-        status.className = "status ok";
-        document.getElementById("camIP").value = found;
-        document.getElementById("connectCard").classList.add("hidden");
-        document.getElementById("cameraCard").classList.remove("hidden");
-      } else {
-        // Still allow manual entry
-        status.innerHTML = `Could not auto-detect.<br>Make sure you are on the camera Wi-Fi, then enter the IP manually below.`;
-        status.className = "status err";
-        document.getElementById("connectCard").classList.add("hidden");
-        document.getElementById("cameraCard").classList.remove("hidden");
-      }
-      btn.disabled = false;
-    }
+        function openLogin() {
+            const ip = getTargetIp();
+            // Force direct browser navigation to switch from HTTPS to local HTTP
+            window.location.href = `http://${ip}/`;
+        }
 
-    async function loadCameraFiles() {
-      const ip = document.getElementById("camIP").value.trim();
-      const status = document.getElementById("camStatus");
-      const gallery = document.getElementById("gallery");
-      status.textContent = "Requesting file list…";
-      status.className = "status";
+        function openMediaDir() {
+            const ip = getTargetIp();
+            // Navigates directly to standard HTTP local file root
+            window.location.href = `http://${ip}/sd/`;
+        }
+    </script>
 
-      // Most of these cameras use simple paths. We try a few common ones.
-      // Real cameras often need specific CGI endpoints; this is a practical starting point.
-      const tryUrls = [
-        `http://${ip}/DCIM/`,
-        `http://${ip}/`,
-        `http://${ip}/cgi-bin/hi3510/list.cgi`,
-        `http://${ip}/sd/`
-      ];
-
-      gallery.innerHTML = "";
-      let success = false;
-
-      for (const url of tryUrls) {
-        try {
-          const res = await fetch(url, { mode: "no-cors" });
-          // Because of no-cors we cannot read the body, but at least we know the host is reachable
-          status.textContent = `Camera reachable at ${ip}. Direct file listing is limited by browser security.`;
-          status.className = "status ok";
-          success = true;
-          break;
-        } catch (e) {}
-      }
-
-      if (!success) {
-        status.textContent = "Cannot reach camera. Confirm you are still on its Wi-Fi network.";
-        status.className = "status err";
-      }
-
-      // Note for user
-      gallery.innerHTML = `
-        <div style="grid-column:1/-1; font-size:0.85rem; color:#888; padding:12px; background:#111; border-radius:10px;">
-          <strong>Browser limitation</strong><br>
-          Pure HTML pages cannot fully enumerate or download private camera files the way the native Trail Cam Go app can (CORS + no-cors restrictions).<br><br>
-          Best practical options:<br>
-          1. Use this page to guide the Wi-Fi connection (same as Trail Cam Go).<br>
-          2. Once connected, open the camera’s own web interface in a new tab (try http://${ip}).<br>
-          3. Or use the server-side sync (/api/sync) after copying files from the camera to the inbox folder.
-        </div>
-      `;
-    }
-
-    async function downloadAll() {
-      const status = document.getElementById("camStatus");
-      status.textContent = "For full bulk download use the server /api/sync after placing files in the inbox folder, or open the camera’s own web UI.";
-      status.className = "status";
-    }
-  </script>
 </body>
 </html>

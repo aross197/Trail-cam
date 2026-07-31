@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AREA 51 TACTICAL</title>
+    <title>AREA 51 TACTICAL • CAMERA LINK</title>
     <style>
         * { box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             background: #0d1117; 
-            color: #58a6ff; 
+            color: #c9d1d9; 
             text-align: center; 
             padding: 20px;
             margin: 0;
@@ -17,34 +17,44 @@
         h1 { 
             color: #3fb950; 
             font-family: monospace; 
-            font-size: 28px; 
-            margin-bottom: 4px;
+            font-size: 26px; 
+            margin-bottom: 2px;
         }
         .sub { 
             color: #8b949e; 
-            font-size: 12px; 
-            letter-spacing: 1.5px; 
-            margin-bottom: 25px; 
+            font-size: 11px; 
+            letter-spacing: 2px; 
+            margin-bottom: 20px; 
         }
         .card { 
             background: #161b22; 
             border-radius: 12px; 
-            padding: 24px; 
+            padding: 20px; 
             max-width: 420px; 
             margin: 0 auto; 
             border: 1px solid #30363d; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        }
+        .step-box {
+            background: #0d1117;
+            border-left: 4px solid #238636;
+            text-align: left;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.5;
         }
         label { 
             display: block; 
             margin-bottom: 8px; 
-            color: #c9d1d9; 
+            color: #58a6ff; 
             font-weight: 600; 
             font-size: 14px;
         }
         input[type="text"] { 
             width: 100%; 
-            padding: 14px; 
+            padding: 12px; 
             border-radius: 8px; 
             border: 1px solid #30363d; 
             background: #0d1117; 
@@ -52,13 +62,10 @@
             font-family: monospace;
             font-size: 18px; 
             text-align: center; 
-            margin-bottom: 20px; 
+            margin-bottom: 15px; 
             outline: none;
         }
-        input[type="text"]:focus {
-            border-color: #58a6ff;
-        }
-        .btn { 
+        .btn-main { 
             display: block; 
             width: 100%; 
             background: #238636; 
@@ -69,57 +76,79 @@
             font-weight: bold; 
             cursor: pointer; 
             border-radius: 8px; 
-            margin: 12px 0; 
+            margin-bottom: 15px; 
             text-decoration: none; 
-            transition: background 0.2s;
         }
-        .btn:hover { background: #2ea043; }
-        .btn-blue { background: #1f6feb; }
-        .btn-blue:hover { background: #388bfd; }
-        .note {
+        .btn-main:active { background: #2ea043; }
+        .preset-title {
             font-size: 12px;
             color: #8b949e;
-            margin-top: 15px;
-            line-height: 1.4;
+            margin-bottom: 8px;
+            text-transform: uppercase;
         }
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .btn-sub {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            padding: 10px 0;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-sub:active { background: #30363d; }
     </style>
 </head>
 <body>
 
     <h1>AREA 51 TACTICAL</h1>
-    <div class="sub">DIRECT CAMERA HANDSHAKE PROTOCOL</div>
+    <div class="sub">UNIVERSAL TRAILCAM LINK</div>
 
     <div class="card">
-        <label for="cameraIp">Target Camera IP Address:</label>
+        
+        <div class="step-box">
+            <strong>Quick Start:</strong><br>
+            1. Connect phone Wi-Fi to <i>TrailCam_XXXX</i><br>
+            2. Tap <b>CONNECT TO CAMERA LOGIN</b> below.
+        </div>
+
+        <label for="cameraIp">Active Camera Target IP:</label>
         <input type="text" id="cameraIp" value="192.168.1.1" placeholder="192.168.1.1">
 
-        <!-- Direct browser navigation triggers (Bypasses HTTPS mixed content restrictions) -->
-        <button class="btn" onclick="openLogin()">LAUNCH CAMERA LOGIN</button>
-        <button class="btn btn-blue" onclick="openMediaDir()">OPEN SD CARD DIRECTORY</button>
+        <!-- Primary Launch Button -->
+        <button class="btn-main" onclick="openLogin()">CONNECT TO CAMERA LOGIN</button>
 
-        <div class="note">
-            <strong>Usage:</strong> Connect your phone to the camera's local Wi-Fi access point (e.g., <i>TrailCam_XXXX</i>), then tap <b>LAUNCH CAMERA LOGIN</b> to jump directly into the hardware control portal.
+        <div class="preset-title">Alternate Model IPs (If Default Fails):</div>
+        <div class="preset-grid">
+            <button class="btn-sub" onclick="setAndLaunch('192.168.1.1')">192.168.1.1</button>
+            <button class="btn-sub" onclick="setAndLaunch('192.168.8.1')">192.168.8.1</button>
+            <button class="btn-sub" onclick="setAndLaunch('192.168.43.1')">192.168.43.1</button>
         </div>
+
     </div>
 
     <script>
         function getTargetIp() {
             let rawIp = document.getElementById('cameraIp').value.trim();
-            // Clean up protocol prefixes or trailing slashes if pasted in by mistake
             let cleanIp = rawIp.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
             return cleanIp || '192.168.1.1';
         }
 
         function openLogin() {
             const ip = getTargetIp();
-            // Force direct browser navigation to switch from HTTPS to local HTTP
+            // Forces immediate browser tab transition to the local camera HTTP web server
             window.location.href = `http://${ip}/`;
         }
 
-        function openMediaDir() {
-            const ip = getTargetIp();
-            // Navigates directly to standard HTTP local file root
-            window.location.href = `http://${ip}/sd/`;
+        function setAndLaunch(ip) {
+            document.getElementById('cameraIp').value = ip;
+            window.location.href = `http://${ip}/`;
         }
     </script>
 

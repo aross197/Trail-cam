@@ -1,6 +1,6 @@
 """
 AREA 51 TACTICAL - Trail Camera Media Server
-Live version with SQLite database + WiFi/SD sync
+Live version with SQLite database + real WiFi/SD sync
 """
 
 import uuid
@@ -28,6 +28,11 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 BASE_DIR = Path(__file__).resolve().parent
 MEDIA_DIR = BASE_DIR / "media"
 MEDIA_DIR.mkdir(exist_ok=True)
+
+# Folder the trail camera / WiFi downloader watches
+# Change this path to your real camera share or SD card mount if needed
+CAMERA_INBOX = BASE_DIR / "inbox"
+CAMERA_INBOX.mkdir(exist_ok=True)
 
 DATABASE_URL = f"sqlite:///{BASE_DIR / 'media.db'}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -92,7 +97,7 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# Live HTML (no previews)
+# Live HTML
 # ---------------------------------------------------------------------------
 HTML_PAGE = r"""
 <!DOCTYPE html>
@@ -559,18 +564,93 @@ async def upload_files(
 @app.post("/api/sync")
 async def wifi_sd_sync():
     """
-    WiFi / SD-card sync endpoint.
-    Currently reports status. Extend this later to scan a real camera folder.
+    Real WiFi / SD-card downloader.
+    Scans the inbox folder and imports any new photos/videos.
     """
     db = SessionLocal()
+    added = 0
+    skipped = 0
+    errors = []
+
     try:
-        count = db.query(MediaFile).count()
+        existing = {
+            row.original_name
+            for row in db.query(MediaFile.original_name).all()
+        }
+
+        for file_path in CAMERA_INBOX.iterdir():
+            if not file_path.is_file():
+                continue
+
+            ext = file_path.suffix.lower()
+            if ext not in ALLOWED_EXTENSIONS:
+                continue
+
+            original_name = file_path.name
+
+            if original_name in existing:
+                skipped += 1
+                continue
+
+            try:
+                content = file_path.read_bytes()
+                size = len(content)
+
+                stored_name = f"{uuid.uuid4().hex}{ext}"
+                dest = MEDIA_DIR / stored_name
+
+                with open(dest, "wb") as f:
+                    f.write(content)
+
+                content_type = "application/octet-stream"
+                if ext in {".jpg", ".jpeg"}:
+                    content_type = "image/jpeg"
+                elif ext == ".png":
+                    content_type = "image/png"
+                elif ext == ".gif":
+                    content_type = "image/gif"
+                elif ext == ".webp":
+                    content_type = "image/webp"
+                elif ext in {".mp4", ".m4v"}:
+                    content_type = "video/mp4"
+                elif ext == ".mov":
+                    content_type = "video/quicktime"
+                elif ext == ".webm":
+                    content_type = "video/webm"
+
+                record = MediaFile(
+                    stored_name=stored_name,
+                    original_name=original_name,
+                    content_type=content_type,
+                    size=size,
+                    detected=None,
+                    confidence=None,
+                    age=None,
+                    weight_live=None,
+                    weight_dressed=None,
+                )
+                db.add(record)
+                db.commit()
+                added += 1
+
+                # Uncomment the next line if you want files deleted from inbox after import
+                # file_path.unlink()
+
+            except Exception as e:
+                errors.append(f"{original_name}: {str(e)}")
+                db.rollback()
+
+        total = db.query(MediaFile).count()
+
         return JSONResponse({
             "ok": True,
-            "added": 0,
-            "total": count,
-            "message": "Sync complete. Upload files or connect a real camera share.",
+            "added": added,
+            "skipped": skipped,
+            "total": total,
+            "errors": errors,
+            "message": f"Sync complete. Imported {added} new file(s)." if added else "No new files found.",
         })
+
     finally:
         db.close()
 

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AREA 51 TACTICAL</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
+    :root {
+      --accent: #39FF14;
+      --bg: #0a0a0c;
+      --card: #14141a;
+      --border: #222;
+      --text: #e0e0e0;
+      --cyan: #00ffff;
+      --red: #ff3333;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: var(--accent);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-size: 1.5rem;
+    }
+    .user {
+      font-size: 0.85rem;
+      color: #888;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+    .btn-secondary {
+      background: #2d3436;
+      color: var(--text);
+    }
+    .btn-danger {
+      background: var(--red);
+      color: white;
+    }
+    .status {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #888;
+      min-height: 20px;
+      margin-bottom: 12px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .card img, .card video {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      background: #111;
+    }
+    .card-body {
+      padding: 10px;
+      font-size: 0.8rem;
+    }
+    .tag {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    .hidden { display: none; }
+    .settings-form label {
+      display: block;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin: 12px 0 4px;
+    }
+    .settings-form input, .settings-form select {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .empty {
+      text-align: center;
+      color: #666;
+      padding: 40px 20px;
+      grid-column: 1 / -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AREA 51</h1>
+    <div class="user" id="username">—</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('gallery')">Gallery</div>
+    <div class="tab" onclick="showTab('settings')">Settings</div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <!-- GALLERY TAB -->
+  <div id="galleryTab">
+    <button class="btn" onclick="doSync()">📡 FORCE SD / WIFI SYNC</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+      📤 Upload Photos / Videos
+    </button>
+    <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display:none" onchange="doUpload(this.files)">
+
+    <div class="gallery" id="gallery">
+      <div class="empty">Loading…</div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="settingsTab" class="hidden">
+    <div class="settings-form">
+      <label>Full Name</label>
+      <input type="text" id="fullName">
+
+      <label>Camera Name</label>
+      <input type="text" id="cameraName" placeholder="My Trail Cam">
+
+      <label>Timezone</label>
+      <input type="text" id="timezone" placeholder="UTC">
+
+      <label>Theme</label>
+      <select id="theme">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select>
+
+      <label>Email Notifications</label>
+      <select id="emailNotifications">
+        <option value="true">On</option>
+        <option value="false">Off</option>
+      </select>
+
+      <label>Notify on New Media</label>
+      <select id="notifyOnNew">
+        <option value="true">On</option>
+        <option value="false">Off</option>
+      </select>
+
+      <hr style="border-color:#333; margin:20px 0;">
+
+      <label>SMTP Host (for email)</label>
+      <input type="text" id="smtpHost" placeholder="smtp.gmail.com">
+
+      <label>SMTP Port</label>
+      <input type="number" id="smtpPort" value="587">
+
+      <label>SMTP Username</label>
+      <input type="text" id="smtpUser">
+
+      <label>SMTP Password</label>
+      <input type="password" id="smtpPass">
+
+      <label>From Email</label>
+      <input type="email" id="smtpFrom">
+
+      <button class="btn" style="margin-top:20px" onclick="saveSettings()">💾 Save Settings</button>
+      <button class="btn btn-danger" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login.html";
+    }
+
+    function authHeaders() {
+      return {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      };
+    }
+
+    function showTab(name) {
+      document.getElementById("galleryTab").classList.toggle("hidden", name !== "gallery");
+      document.getElementById("settingsTab").classList.toggle("hidden", name !== "settings");
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      event.target.classList.add("active");
+      if (name === "settings") loadSettings();
+    }
+
+    async function loadUser() {
+      try {
+        const res = await fetch("/me", { headers: authHeaders() });
+        if (!res.ok) throw new Error("Not logged in");
+        const user = await res.json();
+        document.getElementById("username").textContent = user.username;
+      } catch (e) {
+        localStorage.removeItem("token");
+        window.location.href = "/login.html";
+      }
+    }
+
+    async function loadGallery() {
+      const gallery = document.getElementById("gallery");
+      try {
+        const res = await fetch("/api/files", { headers: authHeaders() });
+        const files = await res.json();
+
+        if (!files.length) {
+          gallery.innerHTML = `<div class="empty">No media yet.<br>Upload or sync files.</div>`;
+          return;
+        }
+
+        gallery.innerHTML = files.map(f => {
+          const isVideo = f.content_type.startsWith("video/");
+          const media = isVideo
+            ? `<video src="${f.url}" muted controls></video>`
+            : `<img src="${f.url}" loading="lazy">`;
+          const tag = f.detected
+            ? `<span class="tag">${f.detected}</span>`
+            : "";
+          return `
+            <div class="card">
+              ${media}
+              <div class="card-body">
+                ${tag}
+                <div>${f.original_name}</div>
+                <button class="btn-danger" style="margin-top:6px;padding:6px;font-size:0.75rem;width:100%;border:none;border-radius:6px;"
+                  onclick="deleteFile(${f.id})">Delete</button>
+              </div>
+            </div>`;
+        }).join("");
+      } catch (e) {
+        gallery.innerHTML = `<div class="empty">Error loading files</div>`;
+      }
+    }
+
+    async function doSync() {
+      const

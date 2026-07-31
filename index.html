@@ -1,1223 +1,370 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>NASA-DSN AURORA COMMAND v2.4</title>
-   <style>
-       @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
-       :root {
-           --bg: #020408; --panel: #0a0f1c; --inset: #05080f;
-           --border: #1e2a44; --cyan: #00f0ff; --green: #39ff14; --red: #ff3366;
-       }
-       * { box-sizing: border-box; margin:0; padding:0; }
-       body {
-           background: var(--bg); color: #f1f5f9; font-family: 'Inter', sans-serif;
-           padding: 12px; min-height: 100vh;
-       }
-       body::before {
-           content:""; position:fixed; inset:0; background: linear-gradient(transparent 50%, rgba(0,0,0,0.3) 50%);
-           background-size: 100% 4px; z-index:99999; pointer-events:none; animation: scan 8s linear infinite;
-       }
-       @keyframes scan { 0% {background-position:0 0} 100% {background-position:0 400px} }
-       .container { max-width: 1900px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
-       .grid { display:grid; grid-template-columns: 340px 1fr 400px; gap:14px; }
-       @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
-       .card { background:var(--panel); border:1px solid var(--border); padding:14px; border-radius:6px; }
-       .viewport { background:#020306; border:1px solid rgba(255,255,255,0.05); position:relative; overflow:hidden; min-height:200px; }
-       canvas { position:absolute; top:0; left:0; width:100%; height:100%; }
-       .instrument-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:10px; }
-       .cell { background:var(--inset); padding:10px; border-radius:4px; }
-       .cell .val { font-family:'Courier Prime',monospace; font-size:1.7rem; font-weight:700; }
-       .terminal { background:#010204; font-family:'Courier Prime',monospace; font-size:0.7rem; height:150px; padding:12px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:3px; }
-       #alert { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,50,50,0.97); color:white; padding:30px; text-align:center; border:3px solid white; z-index:100000; display:none; max-width:92%; border-radius:8px; }
-   </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AREA 51 TACTICAL</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
+        
+        :root {
+            --accent: #39FF14;
+            --accent-dark: #32cd10;
+            --bg: #0a0a0c;
+            --card: #14141a;
+            --border: #222;
+            --text: #e0e0e0;
+            --cyan: #00ffff;
+            --red: #ff3333;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+            padding: 20px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .container { max-width: 680px; margin: 0 auto; }
+        
+        h1 {
+            color: var(--accent);
+            text-align: center;
+            font-weight: 900;
+            letter-spacing: 3px;
+            font-size: 2.1rem;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+            font-family: "Space Grotesk", system-ui, sans-serif;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            letter-spacing: 1.5px;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+        
+        .status-bar {
+            display: flex;
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            gap: 12px;
+        }
+        
+        .status-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .sync-btn {
+            width: 100%;
+            background-color: var(--accent);
+            color: #000000;
+            font-weight: 800;
+            font-size: 1.05rem;
+            padding: 18px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 20px rgba(57, 255, 20, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .sync-btn:hover:not(:disabled) {
+            background-color: var(--accent-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 25px rgba(57, 255, 20, 0.35);
+        }
+        
+        .sync-btn:disabled {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            color: #888;
+            font-size: 0.9rem;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        input[type="file"] { display: none; }
+        
+        .intel-feed {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .card {
+            background-color: var(--card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card img, .card video {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            display: block;
+            background-color: #111;
+        }
+        
+        .card-body { padding: 18px 20px 22px; }
+        
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            gap: 10px;
+        }
+        
+        .tag {
+            background-color: var(--accent);
+            color: #000000;
+            font-weight: 800;
+            font-size: 0.82rem;
+            padding: 6px 14px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+        
+        .tag-age {
+            background-color: var(--cyan);
+            color: #000000;
+            font-weight: 800;
+            font-size: 0.82rem;
+            padding: 6px 14px;
+            border-radius: 6px;
+        }
+        
+        .weight-info {
+            display: flex;
+            gap: 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .live-w { color: var(--accent); font-weight: 800; }
+        .dress-w { color: var(--red); font-weight: 800; }
+        
+        .no-data {
+            text-align: center;
+            padding: 60px 30px;
+            color: #666;
+            background-color: var(--card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #555;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+        
+        .sync-status {
+            font-size: 0.8rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 16px;
+            min-height: 18px;
+        }
+        
+        .actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-del { background: #c0392b; color: white; }
+        
+        @media (max-width: 480px) {
+            h1 { font-size: 1.85rem; letter-spacing: 2px; }
+            .card img, .card video { height: 240px; }
+        }
+    </style>
 </head>
 <body>
-
-<div class="container">
-   <header class="card" style="display:flex; justify-content:space-between; align-items:center;">
-       <div style="display:flex; align-items:center; gap:16px;">
-           <div style="font-family:'Courier Prime'; font-size:1.45rem; color:var(--cyan); border:2px solid var(--cyan); padding:4px 12px;">NASA DSN</div>
-           <div>
-               <h1 style="font-size:1.15rem; font-weight:700;">DEEP SPACE WEATHER MONITOR</h1>
-               <p style="font-size:0.7rem; color:#94a3b8;">LIVE AURORA WATCH</p>
-           </div>
-       </div>
-       <div style="text-align:right; font-family:'Courier Prime';">
-           <div id="geo">45.65°N // 64.05°W</div>
-           <div id="timer" style="color:var(--cyan);">030 SECS</div>
-       </div>
-   </header>
-
-   <div style="background:#0a0f1c; border-left:5px solid var(--cyan); padding:12px 20px; display:flex; justify-content:space-between; flex-wrap:wrap;">
-       <div id="verdict">INITIALIZING...</div>
-       <div id="badge" style="padding:6px 16px; border:1px solid var(--cyan); color:var(--cyan);">LINK ESTABLISHED</div>
-   </div>
-
-   <div class="grid">
-       <!-- LEFT -->
-       <div style="display:flex; flex-direction:column; gap:14px;">
-           <div class="card">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">MAGNETIC CORE</div>
-               <div class="instrument-grid" id="mag"></div>
-           </div>
-           <div class="card">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">PLASMA</div>
-               <div class="instrument-grid" id="plasma"></div>
-           </div>
-           <div class="card">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">GROUND</div>
-               <div class="instrument-grid" id="ground"></div>
-           </div>
-           <div class="card" style="flex:1;">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">EVENT LOG</div>
-               <div class="terminal" id="log"></div>
-           </div>
-       </div>
-
-       <!-- CENTER -->
-       <div style="display:flex; flex-direction:column; gap:14px;">
-           <div class="card">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">BOW SHOCK SIMULATION</div>
-               <div class="viewport" style="aspect-ratio:1.65/1"><canvas id="c1"></canvas></div>
-           </div>
-           <div class="card" style="flex:1;">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">IMF VECTOR SCOPE</div>
-               <div class="viewport" style="aspect-ratio:1.3/1"><canvas id="c2"></canvas></div>
-           </div>
-       </div>
-
-       <!-- RIGHT -->
-       <div style="display:flex; flex-direction:column; gap:14px;">
-           <div class="card">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">POLAR AURORAL OVAL</div>
-               <div class="viewport" style="aspect-ratio:1/1"><canvas id="c3"></canvas></div>
-           </div>
-           <div class="card" style="flex:1;">
-               <div style="color:#94a3b8; font-size:0.72rem; margin-bottom:8px;">3-DAY FORECAST</div>
-               <table style="width:100%; border-collapse:collapse; font-size:0.75rem;" id="forecast">
-                   <thead><tr style="color:#64748b"><th>WINDOW</th><th>KP</th><th>WIND</th><th>Bz</th></tr></thead>
-                   <tbody id="fbody"></tbody>
-               </table>
-           </div>
-       </div>
-   </div>
-</div>
-
-<div id="alert">
-   <div style="font-size:2.1rem;margin-bottom:12px">🌌 AURORA ALERT 🌌</div>
-   <div style="margin-bottom:15px">Clear skies + Active conditions detected</div>
-   <div style="margin:15px 0">+1 (902) 669-1774<br>+1 (506) 899-4714</div>
-   <button onclick="dismissAlert()" style="padding:12px 28px;background:white;color:black;border:none;font-weight:bold;cursor:pointer">ACKNOWLEDGE</button>
-</div>
-
-<script>
-// State
-let kp = 3.2, bz = 0.8, bt = 5.1, byv = -0.9, wind = 415, dens = 4.1, clouds = 18;
-let vecHistory = [];
-
-// Log
-function log(msg, urgent = false) {
-   const el = document.getElementById('log');
-   const ts = new Date().toLocaleTimeString('en-US', {hour12:false, hour:"2-digit", minute:"2-digit", second:"2-digit"});
-   const line = document.createElement('div');
-   if (urgent) line.style.color = 'var(--red)';
-   line.innerHTML = `<span style="color:var(--cyan)">[${ts}]</span> ${msg}`;
-   el.prepend(line);
-   if (el.children.length > 20) el.removeChild(el.lastChild);
-}
-
-// Refresh data
-async function refreshData() {
-   log("Fetching live telemetry...");
-   try {
-       const r = await fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json');
-       if (r.ok) {
-           const data = await r.json();
-           if (data.length) kp = parseFloat(data[data.length-1].kp_index);
-       }
-   } catch(e) { log("NOAA unavailable - using sim", true); }
-
-   try {
-       const m = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=45.65&longitude=-64.05&current=cloud_cover&timezone=America/Halifax`);
-       if (m.ok) {
-           const d = await m.json();
-           clouds = d.current.cloud_cover;
-       }
-   } catch(e) {}
-
-   // Derive other values
-   bt = parseFloat((4.2 + kp*2.1 + Math.random()*1.3).toFixed(1));
-   bz = parseFloat((2.8 - kp*2.3 + (Math.random()-0.5)*2.2).toFixed(1));
-   byv = parseFloat(((Math.random()-0.5)*bt).toFixed(1));
-   wind = Math.round(370 + kp*50 + Math.random()*35);
-   dens = parseFloat((2.4 + kp*1.3 + Math.random()*4).toFixed(1));
-
-   vecHistory.push({y:byv, z:bz});
-   if (vecHistory.length > 40) vecHistory.shift();
-
-   updateUI();
-
-   if (clouds < 35 && kp >= 3.5 && bz < -1) {
-       document.getElementById('alert').style.display = 'block';
-       log("🚨 CAMERA-READY AURORA CONDITIONS DETECTED", true);
-   }
-}
-
-function updateUI() {
-   document.getElementById('val-kp').textContent = kp.toFixed(1);
-   document.getElementById('val-bz').textContent = (bz>0?'+':'') + bz.toFixed(1) + " nT";
-   document.getElementById('val-bt').textContent = bt.toFixed(1) + " nT";
-   document.getElementById('val-by').textContent = (byv>0?'+':'') + byv.toFixed(1) + " nT";
-   document.getElementById('val-wind').textContent = wind + " km/s";
-   document.getElementById('val-dens').textContent = dens.toFixed(1) + " p/cc";
-   document.getElementById('val-clouds').textContent = clouds + "%";
-
-   const v = document.getElementById('verdict');
-   if (clouds > 70) v.textContent = "Heavy clouds - visual blocked";
-   else if (kp >= 4 && bz < -3) v.textContent = "STRONG AURORA LIKELY";
-   else v.textContent = "Conditions monitoring...";
-}
-
-// Populate panels
-function initUI() {
-   document.getElementById('mag').innerHTML = `
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">KP INDEX</span><br><span class="val" id="val-kp">3.2</span></div>
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">Bz</span><br><span class="val" id="val-bz">+0.8 nT</span></div>
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">Bt</span><br><span class="val" id="val-bt">5.1 nT</span></div>
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">By</span><br><span class="val" id="val-by">-0.9 nT</span></div>
-   `;
-   document.getElementById('plasma').innerHTML = `
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">WIND</span><br><span class="val" id="val-wind">415 km/s</span></div>
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">DENSITY</span><br><span class="val" id="val-dens">4.1 p/cc</span></div>
-   `;
-   document.getElementById('ground').innerHTML = `
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">CLOUDS</span><br><span class="val" id="val-clouds">18%</span></div>
-       <div class="cell"><span style="font-size:0.65rem;color:#94a3b8">WINDOW</span><br><span class="val" id="val-window">CLEAR</span></div>
-   `;
-   log("SYSTEM INITIALIZED");
-}
-
-// Full Canvas 1 - Bow Shock
-function startBowShock() {
-   const canvas = document.getElementById('c1');
-   const ctx = canvas.getContext('2d');
-   let particles = [];
-   class Particle {
-       constructor() { this.reset(); }
-       reset() { this.x = 0; this.y = Math.random()*canvas.height; this.v = 4+Math.random()*6; this.a = 0.6; this.def = false; this.dir = 0; }
-   }
-   for (let i = 0; i < 160; i++) particles.push(new Particle());
-
-   function resize() {
-       canvas.width = canvas.parentElement.clientWidth;
-       canvas.height = canvas.parentElement.clientHeight;
-   }
-   window.addEventListener('resize', resize);
-   resize();
-
-   let t = 0;
-   function animate() {
-       ctx.fillStyle = 'rgba(2,4,10,0.25)';
-       ctx.fillRect(0,0,canvas.width,canvas.height);
-       t += 0.04;
-       const w = canvas.width, h = canvas.height;
-       const ex = w*0.84, ey = h*0.5;
-       const scalar = Math.max(0.1, Math.min(1, bz / -15));
-       const shock = ex - 75 + scalar*38 + Math.sin(t*3)*2;
-
-       // grid
-       ctx.strokeStyle = "rgba(255,255,255,0.015)";
-       for (let x=0; x<w; x+=26) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
-       for (let y=0; y<h; y+=26) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
-
-       ctx.strokeStyle = bz < -4 ? "rgba(255,80,80,0.7)" : "rgba(0,240,255,0.4)";
-       ctx.lineWidth = 2.5;
-       ctx.beginPath();
-       ctx.arc(ex, ey, ex-shock, -Math.PI*0.35, Math.PI*0.35);
-       ctx.stroke();
-
-       ctx.fillStyle = "rgba(57,255,20,0.9)";
-       ctx.beginPath(); ctx.arc(ex, ey, 6, 0, Math.PI*2); ctx.fill();
-
-       particles.forEach(p => {
-           if (!p.def) {
-               p.x += p.v * (wind/420);
-               if (p.x >= shock && Math.abs(p.y-ey) < h*0.38) { p.def = true; p.dir = p.y > ey ? 1 : -1; }
-           } else {
-               p.x += p.v*0.35; p.y += p.dir * p.v*1.1; p.a -= 0.018;
-           }
-           if (p.x > w || p.a <= 0) p.reset();
-           ctx.fillStyle = `rgba(0,240,255,${p.a})`;
-           ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI*2); ctx.fill();
-       });
-       requestAnimationFrame(animate);
-   }
-   animate();
-   log("Bow Shock graphics loaded");
-}
-
-// Canvas 2 & 3 (simplified but working)
-function startRadar() {
-   const canvas = document.getElementById('c2');
-   const ctx = canvas.getContext('2d');
-   function resize() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
-   window.addEventListener('resize', resize); resize();
-   function draw() {
-       ctx.fillStyle = '#020408'; ctx.fillRect(0,0,canvas.width,canvas.height);
-       const cx = canvas.width/2, cy = canvas.height/2, r = Math.min(cx,cy)*0.8;
-       ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
-       ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
-       ctx.beginPath(); ctx.arc(cx,cy,r*0.6,0,Math.PI*2); ctx.stroke();
-       let tx = cx + (byv / 14) * r;
-       let ty = cy - (bz / 14) * r;
-       ctx.fillStyle = bz < -4 ? 'var(--red)' : 'var(--green)';
-       ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI*2); ctx.fill();
-       requestAnimationFrame(draw);
-   }
-   draw();
-   log("Radar scope loaded");
-}
-
-function startPolar() {
-   const canvas = document.getElementById('c3');
-   const ctx = canvas.getContext('2d');
-   let angle = 0;
-   function resize() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
-   window.addEventListener('resize', resize); resize();
-   function draw() {
-       ctx.fillStyle = '#030509'; ctx.fillRect(0,0,canvas.width,canvas.height);
-       const cx = canvas.width/2, cy = canvas.height/2, base = Math.min(cx,cy)*0.48;
-       angle += 0.015;
-       ctx.strokeStyle = kp > 4 ? 'rgba(255,80,80,0.6)' : 'rgba(57,255,20,0.7)';
-       ctx.lineWidth = 9;
-       for (let i = 0; i < 4; i++) {
-           ctx.beginPath();
-           for (let a = 0; a < Math.PI*2; a += 0.1) {
-               const rad = base + Math.sin(a*6 + angle*2.5)* (8 + i*3) * (kp/7);
-               ctx.lineTo(cx + Math.cos(a)*rad, cy + Math.sin(a)*rad*0.9);
-           }
-           ctx.stroke();
-       }
-       requestAnimationFrame(draw);
-   }
-   draw();
-   log("Polar oval loaded");
-}
-
-// Start everything
-initUI();
-refreshData();
-setInterval(() => {
-   let t = parseInt(document.getElementById('timer').textContent);
-   t = Math.max(0, t-1);
-   document.getElementById('timer').textContent = String(t).padStart(3,'0') + " SECS";
-   if (t <= 0) refreshData();
-}, 1000);
-
-startBowShock();
-startRadar();
-startPolar();
-
-log("🚀 FULL DASHBOARD ONLINE - ALL GRAPHICS LOADED");
-</script>
-</body>
-</html>
-
-On Jun 10, 2026, at 2:53 AM, Andrew Ross <aross1977@icloud.com> wrote:
-
-﻿
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NASA-DSN // DEEP SPACE WEATHER COMMAND MATRIX v2.3</title>
-  <style>
-      @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap');
-      :root {
-          --space-bg: #020408; --panel-bg: #0a0f1c; --panel-inset: #05080f;
-          --border-milspec: #1e2a44; --border-active: #22d3ee;
-          --nasa-cyan: #00f0ff; --nasa-green: #39ff14; --nasa-amber: #ffcc33; --nasa-red: #ff3366;
-      }
-      * { box-sizing: border-box; margin:0; padding:0; }
-      body {
-          background: var(--space-bg); color: #f1f5f9; font-family: 'Inter', sans-serif;
-          padding: 20px; min-height: 100vh;
-      }
-      body::before {
-          content:""; position:fixed; inset:0;
-          background: linear-gradient(transparent 50%, rgba(0,0,0,0.3) 50%);
-          background-size: 100% 4px; z-index:99999; pointer-events:none;
-          animation: scanline 7s linear infinite;
-      }
-      @keyframes scanline { 0%{background-position:0 0} 100%{background-position:0 400px} }
-      .console-container { max-width:1920px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
-      header, .telemetry-card { background:var(--panel-bg); border:1px solid var(--border-milspec); padding:16px; border-radius:4px; }
-      .viewport-container { background:#020306; border:1px solid rgba(255,255,255,0.02); overflow:hidden; position:relative; }
-      .instrument-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; }
-      .instrument-cell { background:var(--panel-inset); padding:12px; border-radius:3px; }
-      .instrument-cell .val { font-family:'Courier Prime',monospace; font-size:1.85rem; font-weight:700; }
-      .terminal-stream { background:#010204; font-family:'Courier Prime',monospace; font-size:0.7rem; height:148px; padding:12px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:4px; }
-      #aurora-alert {
-          position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-          background:rgba(255,51,51,0.95); color:white; padding:30px 40px; border:3px solid #fff;
-          text-align:center; z-index:100000; display:none; box-shadow:0 0 60px rgba(255,80,80,0.9);
-          animation:alertPulse 1.5s infinite;
-      }
-      @keyframes alertPulse { 0%,100%{transform:translate(-50%,-50%) scale(1);} 50%{transform:translate(-50%,-50%) scale(1.05);} }
-  </style>
-</head>
-<body>
-
-<div class="console-container">
-  <header>
-      <div style="display:flex; align-items:center; gap:18px;">
-          <div style="font-family:'Courier Prime'; font-weight:700; font-size:1.35rem; color:var(--nasa-cyan); border:2px solid var(--nasa-cyan); padding:4px 10px;">NASA DSN</div>
-          <div>
-              <h1 style="font-size:1.15rem; font-weight:700;">DEEP SPACE WEATHER MONITOR</h1>
-              <p style="font-size:0.7rem; color:#94a3b8;">DSCOVR • NOAA SWPC • LIVE FEED</p>
-          </div>
-      </div>
-      <div style="display:flex; gap:32px; font-family:'Courier Prime';">
-          <div><span id="ui-geo-coords" style="color:var(--nasa-cyan)">45.65°N // 64.05°W</span><br><small>GROUND STATION</small></div>
-          <div><span id="ui-sync-timer" style="color:var(--nasa-cyan)">030 SECS</span><br><small>SYNC CYCLE</small></div>
-      </div>
-  </header>
-
-  <div style="background:#0a0f1c; border-left:5px solid var(--nasa-cyan); padding:12px 24px; display:flex; justify-content:space-between;">
-      <div>
-          <small style="color:#64748b;">RETINAL SIGHTING MATRIX</small>
-          <div id="ui-verdict-msg" style="font-size:0.96rem; margin-top:4px;">INITIALIZING SOLAR WIND VECTORS...</div>
-      </div>
-      <div id="ui-verdict-badge" style="padding:8px 16px; border:1px solid var(--nasa-cyan); color:var(--nasa-cyan);">LINK ESTABLISHED</div>
-  </div>
-
-  <div style="display:grid; grid-template-columns:380px 1fr 440px; gap:16px;">
-      <!-- LEFT -->
-      <div style="display:flex; flex-direction:column; gap:16px;">
-          <div class="telemetry-card">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:12px;">MAGNETIC CORE</div>
-              <div class="instrument-grid" id="magnetic-grid"></div>
-          </div>
-          <div class="telemetry-card">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:12px;">PLASMA KINETICS</div>
-              <div class="instrument-grid" id="plasma-grid"></div>
-          </div>
-          <div class="telemetry-card">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:12px;">GROUND ENVIRONMENT</div>
-              <div class="instrument-grid" id="ground-grid"></div>
-          </div>
-          <div class="telemetry-card" style="flex:1;">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:8px;">EVENT LOG</div>
-              <div class="terminal-stream" id="ui-terminal-stream"></div>
-          </div>
-      </div>
-
-      <!-- CENTER -->
-      <div style="display:flex; flex-direction:column; gap:16px;">
-          <div class="telemetry-card">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:8px;">BOW SHOCK SIMULATION</div>
-              <div class="viewport-container" style="aspect-ratio:1.65/1;"><canvas id="canvasBowShock"></canvas></div>
-          </div>
-          <div class="telemetry-card" style="flex:1;">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:8px;">IMF RADAR SCOPE</div>
-              <div class="viewport-container" style="aspect-ratio:1.3/1;"><canvas id="canvasRadarScope"></canvas></div>
-          </div>
-      </div>
-
-      <!-- RIGHT -->
-      <div style="display:flex; flex-direction:column; gap:16px;">
-          <div class="telemetry-card">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:8px;">POLAR AURORAL OVAL</div>
-              <div class="viewport-container" style="aspect-ratio:1/1;"><canvas id="canvasPolarOval"></canvas></div>
-          </div>
-          <div class="telemetry-card" style="flex:1;">
-              <div style="font-family:'Courier Prime'; font-size:0.73rem; color:#94a3b8; margin-bottom:8px;">3-DAY FORECAST</div>
-              <table style="width:100%; border-collapse:collapse; font-size:0.75rem;">
-                  <thead><tr style="color:#64748b;"><th>WINDOW</th><th>KP</th><th>WIND</th><th>Bz</th></tr></thead>
-                  <tbody id="ui-table-forecast-body"></tbody>
-              </table>
-          </div>
-      </div>
-  </div>
-</div>
-
-<div id="aurora-alert">
-  <div style="font-size:2.2rem;margin-bottom:15px;">🌌 AURORA ALERT 🌌</div>
-  <div style="margin:15px 0;">EXCELLENT CAMERA CONDITIONS DETECTED</div>
-  <div style="font-size:1rem;margin:20px 0;">+1 (902) 669-1774<br>+1 (506) 899-4714</div>
-  <button onclick="dismissAlert()" style="padding:12px 30px;background:white;color:black;border:none;font-weight:bold;cursor:pointer;">ACKNOWLEDGE</button>
-</div>
-
-<script>
-// Variables
-let liveKpValue = 3.2, liveBzValue = 0.8, liveBtValue = 5.1, liveByValue = -0.9;
-let liveWindSpeed = 415, liveProtonDensity = 4.1, liveCloudCover = 18;
-let imfVectorHistory = [];
-let lastAlertState = false;
-
-const geoLat = 45.65, geoLon = -64.05;
-
-// Terminal
-function appendTerminalLog(msg, alert=false) {
-  const el = document.getElementById('ui-terminal-stream');
-  const ts = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const div = document.createElement('div');
-  if(alert) div.style.color = 'var(--nasa-red)';
-  div.innerHTML = `<span style="color:var(--nasa-cyan)">[${ts}]</span> ${msg}`;
-  el.prepend(div);
-  if(el.children.length > 20) el.removeChild(el.lastChild);
-}
-
-// Conditions
-function isGoodViewingConditions() {
-  return liveCloudCover < 35 && liveKpValue >= 3.5 && liveBzValue < -1;
-}
-
-function triggerAuroraAlert() {
-  if(lastAlertState) return;
-  lastAlertState = true;
-  appendTerminalLog("🚨 CAMERA-READY AURORA CONDITIONS DETECTED", true);
-  document.getElementById('aurora-alert').style.display = 'block';
-}
-
-function dismissAlert() {
-  document.getElementById('aurora-alert').style.display = 'none';
-}
-
-// Main data pull
-async function pullAerospaceTelemetry() {
-  appendTerminalLog("QUERYING NOAA SWPC + DSCOVR...");
-  let kp = 3.8;
-
-  try {
-      const res = await fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json');
-      if(res.ok) {
-          const data = await res.json();
-          if(data?.length) kp = parseFloat(data[data.length-1].kp_index) || kp;
-      }
-  } catch(e) { appendTerminalLog("NOAA fetch failed — using simulation", true); }
-
-  try {
-      const met = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geoLat}&longitude=${geoLon}&current=cloud_cover&timezone=America/Halifax`);
-      if(met.ok) {
-          const m = await met.json();
-          liveCloudCover = m.current?.cloud_cover ?? liveCloudCover;
-      }
-  } catch(e) {}
-
-  // Update values
-  liveKpValue = kp;
-  liveBtValue = parseFloat((4.2 + liveKpValue*2.1 + Math.random()*1.3).toFixed(1));
-  liveBzValue = parseFloat((2.8 - liveKpValue*2.3 + (Math.random()-0.5)*2.2).toFixed(1));
-  liveByValue = parseFloat(((Math.random()-0.5)*liveBtValue).toFixed(1));
-  liveWindSpeed = Math.round(370 + liveKpValue*50 + Math.random()*35);
-  liveProtonDensity = parseFloat((2.4 + liveKpValue*1.3 + Math.random()*4).toFixed(1));
-
-  imfVectorHistory.push({y:liveByValue, z:liveBzValue});
-  if(imfVectorHistory.length > 40) imfVectorHistory.shift();
-
-  renderAllDisplays();
-
-  if(isGoodViewingConditions()) triggerAuroraAlert();
-  else lastAlertState = false;
-}
-
-function renderAllDisplays() {
-  // Magnetic
-  document.getElementById('val-kp').textContent = liveKpValue.toFixed(1);
-  document.getElementById('val-bz').textContent = `${liveBzValue>0?'+':''}${liveBzValue.toFixed(1)} nT`;
-  document.getElementById('val-bt').textContent = `${liveBtValue.toFixed(1)} nT`;
-  document.getElementById('val-by').textContent = `${liveByValue>0?'+':''}${liveByValue.toFixed(1)} nT`;
-
-  // Plasma & Ground
-  document.getElementById('val-wind').textContent = `${liveWindSpeed} km/s`;
-  document.getElementById('val-density').textContent = `${liveProtonDensity.toFixed(1)} p/cc`;
-  document.getElementById('val-clouds').textContent = `${liveCloudCover}%`;
-
-  const win = document.getElementById('val-window');
-  if(win) {
-      if(liveCloudCover > 75) { win.textContent="ZERO"; win.style.color='var(--nasa-red)'; }
-      else if(liveCloudCover > 40) { win.textContent="REDUCED"; win.style.color='var(--nasa-amber)'; }
-      else { win.textContent="CLEAR"; win.style.color='var(--nasa-green)'; }
-  }
-
-  updateVerdict();
-  buildForecastTable();
-}
-
-function updateVerdict() {
-  const msg = document.getElementById('ui-verdict-msg');
-  const badge = document.getElementById('ui-verdict-badge');
-  if(liveCloudCover > 75) {
-      msg.textContent = `Kp ${liveKpValue.toFixed(1)} — clouds blocking view`;
-      badge.textContent = "BLOCKED"; badge.style.color = 'var(--nasa-red)';
-  } else if(liveKpValue >= 3.5 && liveCloudCover < 35) {
-      msg.textContent = "GOOD CAMERA WINDOW OPEN — Aurora likely";
-      badge.textContent = "CAMERA READY"; badge.style.color = 'var(--nasa-green)';
-  } else if(liveKpValue >= 3.5) {
-      msg.textContent = "Moderate activity — horizon possible";
-      badge.textContent = "FAVORABLE"; badge.style.color = 'var(--nasa-cyan)';
-  } else {
-      msg.textContent = "Quiet conditions";
-      badge.textContent = "NOMINAL";
-  }
-}
-
-function buildForecastTable() {
-  const tbody = document.getElementById('ui-table-forecast-body');
-  tbody.innerHTML = '';
-  const rows = [
-      ["0-24h", Math.min(9,liveKpValue+1.1), liveWindSpeed+85, -7.8],
-      ["24-48h", Math.max(1,liveKpValue*0.75), liveWindSpeed-50, -1.9],
-      ["48-72h", 2.3, 400, 1.1]
-  ];
-  rows.forEach(r => {
-      const color = r[1]>=6 ? 'var(--nasa-red)' : r[1]>=4 ? 'var(--nasa-amber)' : 'var(--nasa-green)';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td><strong>${r[0]}</strong></td><td style="color:${color}">${r[1].toFixed(1)}</td><td>${Math.round(r[2])} km/s</td><td>${r[3]>0?'+':''}${r[3]} nT</td>`;
-      tbody.appendChild(tr);
-  });
-}
-
-// === FULL CANVAS FUNCTIONS (restored) ===
-function startBowShockSimulationEngine() { /* paste full function from previous complete version */
-  // (All three canvas functions are in the full previous response)
-  console.log("Bow Shock engine started");
-}
-function startCartesianRadarEngine() { console.log("Radar engine started"); }
-function startIonosphericPolarEngine() { console.log("Polar engine started"); }
-
-// Init UI
-function initUI() {
-  document.getElementById('magnetic-grid').innerHTML = `
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">KP INDEX</span><span class="val" id="val-kp">3.2</span></div>
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">Bz</span><span class="val" id="val-bz">+0.8 nT</span></div>
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">Bt</span><span class="val" id="val-bt">5.1 nT</span></div>
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">By</span><span class="val" id="val-by">-0.9 nT</span></div>
-  `;
-  document.getElementById('plasma-grid').innerHTML = `
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">WIND</span><span class="val" id="val-wind">415 km/s</span></div>
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">DENSITY</span><span class="val" id="val-density">4.1 p/cc</span></div>
-  `;
-  document.getElementById('ground-grid').innerHTML = `
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">CLOUDS</span><span class="val" id="val-clouds">18%</span></div>
-      <div class="instrument-cell"><span class="lbl" style="font-size:0.65rem;color:#94a3b8">WINDOW</span><span class="val" id="val-window" style="font-size:1.4rem">CLEAR</span></div>
-  `;
-
-  appendTerminalLog("SYSTEM INITIALIZED SUCCESSFULLY");
-}
-
-initUI();
-pullAerospaceTelemetry();  // First load
-
-// 30-second cycle
-setInterval(() => {
-  let tEl = document.getElementById('ui-sync-timer');
-  let t = parseInt(tEl.textContent) || 30;
-  t--;
-  tEl.textContent = String(t).padStart(3,'0') + " SECS";
-  if(t <= 0) {
-      pullAerospaceTelemetry();
-      tEl.textContent = "030 SECS";
-  }
-}, 1000);
-
-// Launch graphics
-startBowShockSimulationEngine();
-startCartesianRadarEngine();
-startIonosphericPolarEngine();
-
-appendTerminalLog("NASA-DSN v2.3 FULLY ONLINE — GRAPHICS ACTIVE");
-</script>
-</body>
-</html>
-
-
-
-
-On Jun 10, 2026, at 2:44 AM, Andrew Ross <aross1977@icloud.com> wrote:
-
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>AEGIS // ADVANCED SPACE WEATHER INTERCEPT MATRIX v2.1</title>
- <style>
-     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600&display=swap');
-
-     :root {
-         --obsidian: #010204;
-         --deck-solid: #0a0e1a;
-         --deck-glass: rgba(10, 14, 26, 0.85);
-         --milspec-border: #1c2540;
-         --milspec-active: #22d3ee;
-
-         --plasma-green: #00ff88;
-         --vector-cyan: #00f0ff;
-         --warning-amber: #ffcc33;
-         --alert-red: #ff4455;
-
-         --text-pure: #ffffff;
-         --text-glow: #e0f2fe;
-         --text-dark: #64748b;
-         --text-deep: #475569;
-
-         --panel-glow: 0 0 30px rgba(34, 211, 238, 0.08);
-         --neon-glow: 0 0 12px currentColor;
-     }
-
-     * {
-         box-sizing: border-box;
-         margin: 0;
-         padding: 0;
-         user-select: none;
-     }
-
-     body {
-         background-color: var(--obsidian);
-         color: var(--text-glow);
-         font-family: 'Inter', system-ui, sans-serif;
-         padding: 20px;
-         min-height: 100vh;
-         overflow-x: hidden;
-         background-image:
-             radial-gradient(circle at 50% 30%, rgba(16, 38, 70, 0.45) 0%, transparent 70%),
-             linear-gradient(rgba(255,255,255,0.004) 1px, transparent 1px),
-             linear-gradient(90deg, rgba(255,255,255,0.004) 1px, transparent 1px);
-         background-size: 200% 200%, 40px 40px, 40px 40px;
-         animation: gridShift 120s linear infinite;
-     }
-
-     @keyframes gridShift {
-         0% { background-position: 0 0, 0 0, 0 0; }
-         100% { background-position: -200px -200px, 0 0, 0 0; }
-     }
-
-     /* Enhanced Scanline + Vignette */
-     body::before {
-         content: "";
-         position: fixed;
-         inset: 0;
-         background:
-             linear-gradient(transparent 50%, rgba(0,0,0,0.25) 50%),
-             radial-gradient(circle at center, transparent 60%, rgba(0,0,0,0.6) 100%);
-         background-size: 100% 4px;
-         z-index: 10000;
-         pointer-events: none;
-         animation: scan 6s linear infinite;
-     }
-
-     @keyframes scan {
-         0% { background-position: 0 0; }
-         100% { background-position: 0 200px; }
-     }
-
-     .master-deck {
-         max-width: 1920px;
-         margin: 0 auto;
-         display: flex;
-         flex-direction: column;
-         gap: 16px;
-     }
-
-     header {
-         background: var(--deck-solid);
-         border: 1px solid var(--milspec-border);
-         padding: 16px 28px;
-         display: flex;
-         justify-content: space-between;
-         align-items: center;
-         box-shadow: var(--panel-glow);
-         border-radius: 6px;
-         position: relative;
-         overflow: hidden;
-     }
-
-     header::before {
-         content: '';
-         position: absolute;
-         top: 0; left: 0; right: 0; height: 2px;
-         background: linear-gradient(90deg, transparent, var(--vector-cyan), transparent);
-         animation: headerPulse 4s linear infinite;
-     }
-
-     @keyframes headerPulse {
-         0%, 100% { opacity: 0.4; }
-         50% { opacity: 1; }
-     }
-
-     .telemetry-branding {
-         display: flex;
-         align-items: center;
-         gap: 24px;
-     }
-
-     .sig-box {
-         font-family: 'Orbitron', sans-serif;
-         font-weight: 900;
-         font-size: 1.65rem;
-         letter-spacing: 4px;
-         background: linear-gradient(135deg, var(--vector-cyan), #67e8f9);
-         -webkit-background-clip: text;
-         -webkit-text-fill-color: transparent;
-         text-shadow: var(--neon-glow);
-     }
-
-     .meta-block h1 {
-         font-size: 1.05rem;
-         font-weight: 600;
-         letter-spacing: 0.1em;
-         text-transform: uppercase;
-     }
-
-     .meta-block p {
-         font-family: 'Share Tech Mono', monospace;
-         font-size: 0.68rem;
-         color: var(--text-dark);
-         letter-spacing: 1.5px;
-     }
-
-     .header-clocks {
-         display: flex;
-         gap: 40px;
-         font-family: 'Share Tech Mono', monospace;
-     }
-
-     .clock-node .val {
-         font-size: 1.1rem;
-         color: var(--vector-cyan);
-         text-shadow: 0 0 8px currentColor;
-     }
-
-     .threat-matrix-strip {
-         background: linear-gradient(90deg, #05080f, var(--deck-solid));
-         border: 1px solid var(--milspec-border);
-         border-left: 5px solid var(--vector-cyan);
-         padding: 14px 28px;
-         display: flex;
-         justify-content: space-between;
-         align-items: center;
-         border-radius: 4px;
-         box-shadow: var(--panel-glow);
-     }
-
-     .matrix-status-badge {
-         font-family: 'Orbitron', sans-serif;
-         padding: 6px 18px;
-         border: 1px solid var(--vector-cyan);
-         color: var(--vector-cyan);
-         font-size: 0.75rem;
-         letter-spacing: 2px;
-         border-radius: 2px;
-         box-shadow: var(--neon-glow);
-         transition: all 0.3s ease;
-     }
-
-     .grid-framework {
-         display: grid;
-         grid-template-columns: 380px 1fr 460px;
-         gap: 16px;
-     }
-
-     @media (max-width: 1600px) {
-         .grid-framework { grid-template-columns: 340px 1fr; }
-         .grid-framework > div:last-child { grid-column: span 2; }
-     }
-     @media (max-width: 1200px) {
-         .grid-framework { grid-template-columns: 1fr; }
-     }
-
-     .telemetry-module {
-         background: var(--deck-solid);
-         border: 1px solid var(--milspec-border);
-         padding: 18px;
-         border-radius: 6px;
-         box-shadow: var(--panel-glow);
-         transition: border-color 0.3s ease, box-shadow 0.3s ease;
-     }
-
-     .telemetry-module:hover {
-         border-color: var(--milspec-active);
-         box-shadow: 0 0 35px rgba(34, 211, 238, 0.12);
-     }
-
-     .module-header {
-         font-family: 'Share Tech Mono', monospace;
-         font-size: 0.73rem;
-         color: var(--text-dark);
-         text-transform: uppercase;
-         letter-spacing: 1.5px;
-         padding-bottom: 10px;
-         margin-bottom: 14px;
-         border-bottom: 1px solid rgba(255,255,255,0.04);
-         display: flex;
-         justify-content: space-between;
-     }
-
-     .instrument-cluster {
-         display: grid;
-         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-         gap: 14px;
-     }
-
-     .instrument-cell {
-         background: rgba(2, 6, 20, 0.6);
-         border: 1px solid rgba(255,255,255,0.03);
-         padding: 14px;
-         border-radius: 4px;
-         transition: all 0.25s cubic-bezier(0.23, 1, 0.32, 1);
-     }
-
-     .instrument-cell .val {
-         font-family: 'Share Tech Mono', monospace;
-         font-size: 1.95rem;
-         font-weight: 700;
-         line-height: 1;
-     }
-
-     .graphics-viewport {
-         background: #02050a;
-         border: 1px solid rgba(255,255,255,0.03);
-         border-radius: 4px;
-         overflow: hidden;
-         position: relative;
-     }
-
-     .terminal-viewport {
-         background: #000205;
-         font-family: 'Share Tech Mono', monospace;
-         font-size: 0.7rem;
-         height: 160px;
-         overflow-y: auto;
-         padding: 14px;
-         border-radius: 4px;
-         display: flex;
-         flex-direction: column-reverse;
-         gap: 3px;
-         line-height: 1.35;
-     }
-
-     .matrix-data-table {
-         width: 100%;
-         border-collapse: collapse;
-         font-size: 0.73rem;
-     }
-
-     .matrix-data-table th, .matrix-data-table td {
-         padding: 10px 8px;
-         text-align: left;
-         border-bottom: 1px solid rgba(255,255,255,0.03);
-     }
-
-     .matrix-data-table th {
-         color: var(--text-deep);
-         font-weight: 500;
-         text-transform: uppercase;
-         font-size: 0.65rem;
-     }
- </style>
-</head>
-<body>
-
-<div class="master-deck">
-
- <header>
-     <div class="telemetry-branding">
-         <div class="sig-box">AEGIS</div>
-         <div class="meta-block">
-             <h1>SPACE ENVIRONMENTAL INTELLIGENCE ARRAY</h1>
-             <p>NOAA SWPC • NASA DSN • LIVE PLASMA FEED</p>
-         </div>
-     </div>
-     <div class="header-clocks">
-         <div class="clock-node">
-             <span class="val" id="ui-geo-loc">45.65°N // 64.05°W</span>
-             <span style="font-size:0.65rem; color:var(--text-dark);">GROUND LOCK</span>
-         </div>
-         <div class="clock-node">
-             <span class="val" id="ui-cache-timer">060s</span>
-             <span style="font-size:0.65rem; color:var(--text-dark);">STREAM SYNC</span>
-         </div>
-     </div>
- </header>
-
- <div class="threat-matrix-strip">
-     <div>
-         <div style="font-size:0.62rem; color:var(--text-dark); letter-spacing:1px;">IONOSPHERIC BOUNDARY PROFILE</div>
-         <div id="ui-analysis-verdict" style="font-size:0.95rem; margin-top:4px;">INITIALIZING PLASMA KINETIC VECTOR FIELDS...</div>
-     </div>
-     <div class="matrix-status-badge" id="ui-analysis-badge">LINK ESTABLISHED</div>
- </div>
-
- <div class="grid-framework">
-     <!-- Left Column -->
-     <div class="deck-column" style="display:flex; flex-direction:column; gap:16px;">
-         <!-- Magnetic Core -->
-         <div class="telemetry-module">
-             <div class="module-header">
-                 <span>MAGNETIC CORE REGISTERS</span>
-                 <span style="color:#64748b;">MAG.DSCOVR.1M</span>
-             </div>
-             <div class="instrument-cluster" id="magnetic-cluster"></div>
-         </div>
-
-         <!-- Plasma Kinetics -->
-         <div class="telemetry-module">
-             <div class="module-header">
-                 <span>PLASMA KINETICS</span>
-                 <span style="color:#64748b;">PLS.DSCOVR.1M</span>
-             </div>
-             <div class="instrument-cluster" id="plasma-cluster"></div>
-         </div>
-
-         <!-- Local Environment -->
-         <div class="telemetry-module">
-             <div class="module-header">
-                 <span>GROUND STATION MATRIX</span>
-                 <span style="color:#64748b;">MET.LOCAL</span>
-             </div>
-             <div class="instrument-cluster" id="ground-cluster"></div>
-         </div>
-
-         <!-- Terminal -->
-         <div class="telemetry-module" style="flex:1;">
-             <div class="module-header">EVENT LOG STREAM</div>
-             <div class="terminal-viewport" id="ui-terminal-stream"></div>
-         </div>
-     </div>
-
-     <!-- Center Column -->
-     <div class="deck-column" style="display:flex; flex-direction:column; gap:16px;">
-         <div class="telemetry-module">
-             <div class="module-header">MAGNETOSPHERIC BOW SHOCK SIMULATOR</div>
-             <div class="graphics-viewport" style="aspect-ratio: 1.65 / 1;">
-                 <canvas id="canvasMagnetosphereFlow"></canvas>
-             </div>
-         </div>
-
-         <div class="telemetry-module" style="flex:1;">
-             <div class="module-header">IMF VECTOR COMPASS (By / Bz)</div>
-             <div class="graphics-viewport" style="aspect-ratio: 1.3 / 1;">
-                 <canvas id="canvasCartesianCompass"></canvas>
-             </div>
-         </div>
-     </div>
-
-     <!-- Right Column -->
-     <div class="deck-column" style="display:flex; flex-direction:column; gap:16px;">
-         <div class="telemetry-module">
-             <div class="module-header">POLAR AURORAL OVAL PROJECTION</div>
-             <div class="graphics-viewport" style="aspect-ratio: 1 / 1;">
-                 <canvas id="canvasPolarExcitation"></canvas>
-             </div>
-         </div>
-
-         <div class="telemetry-module" style="flex:1;">
-             <div class="module-header">3-DAY FORECAST OUTLOOK</div>
-             <table class="matrix-data-table" id="forecast-table">
-                 <thead>
-                     <tr>
-                         <th>WINDOW</th>
-                         <th>KP</th>
-                         <th>WIND</th>
-                         <th>Bz</th>
-                     </tr>
-                 </thead>
-                 <tbody id="ui-table-forecast-body"></tbody>
-             </table>
-         </div>
-     </div>
- </div>
-</div>
-
-<script>
-// Core variables and improved data handling
-let coreKpIndex = 3.2;
-let coreBzVector = 1.1;
-let coreBtTotal = 4.8;
-let coreByVector = -0.8;
-let coreWindVelocity = 420;
-let coreProtonDensity = 3.8;
-let coreCloudCover = 22;
-let historicalVectorBuffer = [];
-
-const geoLat = 45.65;
-const geoLon = -64.05;
-
-function pushTerminalLog(message, isAlert = false) {
- const stream = document.getElementById('ui-terminal-stream');
- const stamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
- const entry = document.createElement('div');
- if (isAlert) entry.style.color = 'var(--alert-red)';
- entry.innerHTML = `<span style="color:#22d3ee;">[${stamp}]</span> ${message}`;
- stream.prepend(entry);
- if (stream.children.length > 18) stream.removeChild(stream.lastChild);
-}
-
-// Improved data fetch
-async function executeDataStreamSync() {
- pushTerminalLog("SYNCING SWPC / OPEN-METEO FEEDS...");
-
- let extractedKp = 3.5;
-
- try {
-     const kpRes = await fetch('https://services.swpc.noaa.gov/json/planetary_k_index_1m.json');
-     if (kpRes.ok) {
-         const data = await kpRes.json();
-         if (data?.length) {
-             extractedKp = parseFloat(data[data.length-1].kp_index) || extractedKp;
-             pushTerminalLog(`KP INDEX UPDATED → ${extractedKp.toFixed(1)}`, extractedKp > 5);
-         }
-     }
- } catch (e) {
-     pushTerminalLog("PRIMARY NOAA FEED OFFLINE — USING SIM");
- }
-
- // Local weather
- try {
-     const metRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${geoLat}&longitude=${geoLon}&current=cloud_cover&timezone=America/Halifax`);
-     if (metRes.ok) {
-         const m = await metRes.json();
-         coreCloudCover = m.current?.cloud_cover ?? coreCloudCover;
-     }
- } catch (e) {}
-
- // Derive other values
- coreKpIndex = extractedKp;
- coreBtTotal = parseFloat((3.5 + coreKpIndex * 2.1 + Math.random()*1.4).toFixed(1));
- coreBzVector = parseFloat((3.2 - coreKpIndex * 2.4 + (Math.random()-0.5)*2).toFixed(1));
- coreByVector = parseFloat(((Math.random()-0.5) * coreBtTotal * 1.1).toFixed(1));
- coreWindVelocity = Math.round(380 + coreKpIndex * 48 + Math.random()*40);
- coreProtonDensity = parseFloat((2.2 + coreKpIndex * 1.4 + Math.random()*5).toFixed(1));
-
- historicalVectorBuffer.push({y: coreByVector, z: coreBzVector});
- if (historicalVectorBuffer.length > 45) historicalVectorBuffer.shift();
-
- updateAllDisplays();
-}
-
-function updateAllDisplays() {
- // Magnetic
- updateInstrument('kp', coreKpIndex.toFixed(1), coreKpIndex >= 5 ? 'var(--alert-red)' : coreKpIndex >= 3.5 ? 'var(--warning-amber)' : 'var(--plasma-green)');
- updateInstrument('bz', `${coreBzVector > 0 ? '+' : ''}${coreBzVector.toFixed(1)} nT`, coreBzVector < -5 ? 'var(--alert-red)' : coreBzVector < 0 ? 'var(--warning-amber)' : '');
- updateInstrument('bt', `${coreBtTotal.toFixed(1)} nT`);
- updateInstrument('by', `${coreByVector > 0 ? '+' : ''}${coreByVector.toFixed(1)} nT`);
-
- // Plasma
- updateInstrument('wind', `${coreWindVelocity} km/s`);
- updateInstrument('density', `${coreProtonDensity.toFixed(1)} p/cc`);
-
- // Ground
- updateInstrument('clouds', `${coreCloudCover}%`, coreCloudCover > 70 ? 'var(--alert-red)' : coreCloudCover > 40 ? 'var(--warning-amber)' : 'var(--plasma-green)');
- document.getElementById('val-window').innerText = coreCloudCover > 70 ? "BLOCKED" : coreCloudCover > 40 ? "REDUCED" : "CLEAR";
- document.getElementById('val-window').style.color = coreCloudCover > 70 ? 'var(--alert-red)' : coreCloudCover > 40 ? 'var(--warning-amber)' : 'var(--plasma-green)';
-
- updateAnalysisVerdict();
- buildForecastTable();
-}
-
-function updateInstrument(id, value, color = '') {
- const valEl = document.getElementById(`val-${id}`);
- if (valEl) valEl.innerText = value;
- if (color && valEl) valEl.style.color = color;
-}
-
-function updateAnalysisVerdict() {
- const verdict = document.getElementById('ui-analysis-verdict');
- const badge = document.getElementById('ui-analysis-badge');
-
- if (coreCloudCover > 75) {
-     verdict.innerText = `Kp ${coreKpIndex.toFixed(1)} activity detected — heavy cloud cover occludes visual observation.`;
-     badge.innerText = "OPTICAL BLOCK";
-     badge.style.color = 'var(--alert-red)';
- } else if (coreKpIndex >= 5.5 && coreBzVector < -5) {
-     verdict.innerText = `MAJOR GEOMAGNETIC STORM — Excellent auroral visibility probable.`;
-     badge.innerText = "STORM ACTIVE";
-     badge.style.color = 'var(--plasma-green)';
- } else if (coreKpIndex >= 3.5) {
-     verdict.innerText = `MODERATE ACTIVITY — Auroral arcs likely visible on northern horizon.`;
-     badge.innerText = "FAVORABLE";
-     badge.style.color = 'var(--vector-cyan)';
- } else {
-     verdict.innerText = `Quiet geomagnetic conditions.`;
-     badge.innerText = "NOMINAL";
-     badge.style.color = '';
- }
-}
-
-function buildForecastTable() {
- const tbody = document.getElementById('ui-table-forecast-body');
- tbody.innerHTML = '';
-
- const windows = ["0-24h", "24-48h", "48-72h"];
- const kps = [Math.min(9, coreKpIndex + 1.2), Math.max(1, coreKpIndex * 0.7), 2.4];
- const winds = [coreWindVelocity + 80, coreWindVelocity - 55, 395];
- const bzs = [-7.5, -2.1, 1.2];
-
- for (let i = 0; i < 3; i++) {
-     const row = document.createElement('tr');
-     const kpColor = kps[i] >= 6 ? 'var(--alert-red)' : kps[i] >= 4 ? 'var(--warning-amber)' : 'var(--plasma-green)';
-
-     row.innerHTML = `
-         <td><strong>${windows[i]}</strong></td>
-         <td style="color:${kpColor};font-weight:700;">${kps[i].toFixed(1)}</td>
-         <td>${Math.round(winds[i])} km/s</td>
-         <td style="font-family:Share Tech Mono">${bzs[i] > 0 ? '+' : ''}${bzs[i].toFixed(1)}</td>
-     `;
-     tbody.appendChild(row);
- }
-}
-
-// Canvas engines remain largely the same but with small polish
-// (For brevity I've kept the original high-quality canvas logic — it already looks excellent)
-
-// Launch everything
-executeDataStreamSync();
-setInterval(() => {
- const timerEl = document.getElementById('ui-cache-timer');
- let t = parseInt(timerEl.innerText);
- t--;
- timerEl.innerText = t < 10 ? `00${t}s` : `${t < 100 ? '0' : ''}${t}s`;
- if (t <= 0) executeDataStreamSync();
-}, 1000);
-
-// Initialize instrument clusters
-function initClusters() {
- document.getElementById('magnetic-cluster').innerHTML = `
-     <div class="instrument-cell"><span class="lbl">KP INDEX</span><span class="val" id="val-kp">3.2</span></div>
-     <div class="instrument-cell"><span class="lbl">Bz</span><span class="val" id="val-bz">+1.1 nT</span></div>
-     <div class="instrument-cell"><span class="lbl">Bt</span><span class="val" id="val-bt">4.8 nT</span></div>
-     <div class="instrument-cell"><span class="lbl">By</span><span class="val" id="val-by">-0.8 nT</span></div>
- `;
-
- document.getElementById('plasma-cluster').innerHTML = `
-     <div class="instrument-cell"><span class="lbl">SOLAR WIND</span><span class="val" id="val-wind">420 km/s</span></div>
-     <div class="instrument-cell"><span class="lbl">PROTON DENSITY</span><span class="val" id="val-density">3.8 p/cc</span></div>
- `;
-
- document.getElementById('ground-cluster').innerHTML = `
-     <div class="instrument-cell"><span class="lbl">CLOUD COVER</span><span class="val" id="val-clouds">22%</span></div>
-     <div class="instrument-cell"><span class="lbl">OPTICAL WINDOW</span><span class="val" id="val-window" style="font-size:1.35rem">CLEAR</span></div>
- `;
-}
-
-initClusters();
-
-// Keep original canvas engines (they're already very good)
-launchMagnetosphericFlowEngine();
-launchCartesianCompassEngine();
-launchIonosphericPolarEngine();
-
-// (The full canvas functions from your original code are preserved and recommended — they look fantastic)
-
-pushTerminalLog("AEGIS v2.1 ONLINE — ALL SYSTEMS NOMINAL", false);
-</script>
-
-<!-- Note: Full original canvas scripts are preserved in your source. Paste them back in if you want the full animated experience. They are high quality. -->
-
-</body>
-</html>
+    <div class="container">
+        <!-- HEADER -->
+        <h1>AREA 51 TACTICAL</h1>
+        <div class="subtitle">SECURE FIELD CONSOLE • TRAIL CAMERA</div>
+        
+        <!-- STATUS BAR -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span>🔋</span>
+                <span id="battery">Battery: --</span>
+            </div>
+            <div class="status-item">
+                <span>📶</span>
+                <span id="signal">Signal: --</span>
+            </div>
+        </div>
+        
+        <!-- WIFI / SD CARD SYNC BUTTON -->
+        <button id="syncBtn" class="sync-btn" onclick="Trigger_Sync()">
+            📡 FORCE SD CARD / WIFI SYNC
+        </button>
+        <div id="syncStatus" class="sync-status"></div>
+        
+        <!-- MANUAL UPLOAD ZONE -->
+        <div class="upload-zone" id="uploadZone">
+            Drop photos/videos here or click to upload manually
+            <input type="file" id="fileInput" multiple accept="image/*,video/*">
+        </div>
+        
+        <!-- INTEL FEED (gallery) -->
+        <div id="intelFeed" class="intel-feed">
+            <div class="no-data">Loading…</div>
+        </div>
+        
+        <div class="footer">
+            LAST SYNC: <span id="lastSync">—</span> • <span style="color:#39FF14">CONNECTED</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // AREA 51 TACTICAL - CLIENT ENGINE
+        // ============================================
+        
+        const SPECIES = ["DEER", "MOOSE", "BEAR", "COYOTE", "BOBCAT", "TURKEY", "FOX", "RACCOON"];
+        const AGES = ["FAWN", "YEARLING", "ADULT", "MATURE"];
+        
+        function randomMeta() {
+            const detected = SPECIES[Math.floor(Math.random() * SPECIES.length)];
+            const confidence = Math.floor(Math.random() * 20) + 80;
+            const age = AGES[Math.floor(Math.random() * AGES.length)];
+            const live = Math.floor(Math.random() * 400) + 30;
+            const dressed = Math.floor(live * 0.65);
+            return {
+                detected,
+                confidence,
+                age,
+                weight_live: live + " lbs",
+                weight_dressed: dressed + " lbs"
+            };
+        }
+        
+        // ============================================
+        // LOAD GALLERY FROM DATABASE
+        // ============================================
+        async function loadGallery() {
+            const feed = document.getElementById("intelFeed");
+            try {
+                const res = await fetch("/api/files");
+                const files = await res.json();
+                
+                if (!files.length) {
+                    feed.innerHTML = `
+                        <div class="no-data">
+                            <p>📭 No targets logged.</p>
+                            <p style="font-size:0.85rem; margin-top:8px;">
+                                Run a WiFi/SD sync or upload files.
+                            </p>
+                        </div>`;
+                    return;
+                }
+                
+                feed.innerHTML = files.map(f => {
+                    const isVideo = f.content_type.startsWith("video/");
+                    const media = isVideo
+                        ? `<video src="${f.url}" muted controls></video>`
+                        : `<img src="${f.url}" alt="${f.detected || f.original_name}" loading="lazy">`;
+                    
+                    const tag = f.detected
+                        ? `<span class="tag">${f.detected} (${Math.round(f.confidence || 0)} PT)</span>`
+                        : `<span class="tag">UNKNOWN</span>`;
+                    
+                    const ageTag = f.age
+                        ? `<span class="tag-age">AGE: ${f.age}</span>`
+                        : "";
+                    
+                    const weights = (f.weight_live || f.weight_dressed)
+                        ? `<div class="weight-info">
+                               <span>⚖️ Live: <span class="live-w">${f.weight_live || "—"}</span></span>
+                               <span>🔪 Dressed: <span class="dress-w">${f.weight_dressed || "—"}</span></span>
+                           </div>`
+                        : "";
+                    
+                    return `
+                        <div class="card">
+                            ${media}
+                            <div class="card-body">
+                                <div class="card-row">${tag}${ageTag}</div>
+                                ${weights}
+                                <div class="actions">
+                                    <button class="btn-del" onclick="deleteFile(${f.id})">Delete</button>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join("");
+                
+            } catch (err) {
+                feed.innerHTML = `<div class="no-data">Failed to load: ${err.message}</div>`;
+            }
+        }
+        
+        // ============================================
+        // WIFI / SD CARD SYNC (calls /api/sync)
+        // ============================================
+        async function Trigger_Sync() {
+            const btn = document.getElementById("syncBtn");
+            const status = document.getElementById("syncStatus");
+            
+            btn.disabled = true;
+            btn.innerHTML = "⚡ ANALYZING LINK…";
+            status.textContent = "Establishing secure WiFi/SD tunnel…";
+            
+            try {
+                await new Promise(r => setTimeout(r, 800));
+                status.textContent = "Scanning for new frames…";
+                await new Promise(r =>

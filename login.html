@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AREA 51 TACTICAL – Login</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
+    :root {
+      --accent: #39FF14;
+      --bg: #0a0a0c;
+      --card: #14141a;
+      --border: #222;
+      --text: #e0e0e0;
+      --red: #ff3333;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 380px;
+    }
+    h1 {
+      color: var(--accent);
+      text-align: center;
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+      margin-bottom: 28px;
+      letter-spacing: 1px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn:disabled {
+      background: #444;
+      color: #888;
+    }
+    .switch {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #888;
+    }
+    .switch a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .status {
+      text-align: center;
+      font-size: 0.85rem;
+      min-height: 22px;
+      margin-bottom: 12px;
+    }
+    .status.err { color: var(--red); }
+    .status.ok { color: var(--accent); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>AREA 51</h1>
+    <div class="subtitle">TACTICAL LOGIN</div>
+
+    <div class="status" id="status"></div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="username" autocomplete="username">
+
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="password" autocomplete="current-password">
+
+      <button class="btn" id="loginBtn" onclick="doLogin()">LOGIN</button>
+
+      <div class="switch">
+        No account? <a href="#" onclick="showRegister()">Register</a>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" class="hidden">
+      <label>Email</label>
+      <input type="email" id="regEmail" placeholder="you@email.com">
+
+      <label>Username</label>
+      <input type="text" id="regUser" placeholder="username">
+
+      <label>Full Name (optional)</label>
+      <input type="text" id="regName" placeholder="Your name">
+
+      <label>Password</label>
+      <input type="password" id="regPass" placeholder="password">
+
+      <button class="btn" id="regBtn" onclick="doRegister()">CREATE ACCOUNT</button>
+
+      <div class="switch">
+        Already have an account? <a href="#" onclick="showLogin()">Login</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showRegister() {
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("registerForm").classList.remove("hidden");
+      document.getElementById("status").textContent = "";
+    }
+
+    function showLogin() {
+      document.getElementById("registerForm").classList.add("hidden");
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("status").textContent = "";
+    }
+
+    async function doRegister() {
+      const email = document.getElementById("regEmail").value.trim();
+      const username = document.getElementById("regUser").value.trim();
+      const full_name = document.getElementById("regName").value.trim();
+      const password = document.getElementById("regPass").value;
+
+      const status = document.getElementById("status");
+      const btn = document.getElementById("regBtn");
+
+      if (!email || !username || !password) {
+        status.textContent = "Please fill all required fields";
+        status.className = "status err";
+        return;
+      }
+
+      btn.disabled = true;
+      status.textContent = "Creating account…";
+      status.className = "status";
+
+      try {
+        const res = await fetch("/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, username, password, full_name: full_name || null })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || "Registration failed");
+        }
+
+        status.textContent = "Account created! Logging in…";
+        status.className = "status ok";
+
+        // Auto login after register
+        await loginWith(username, password);
+
+      } catch (e) {
+        status.textContent = e.message;
+        status.className = "status err";
+        btn.disabled = false;
+      }
+    }
+
+    async function doLogin() {
+      const username = document.getElementById("loginUser").value.trim();
+      const password = document.getElementById("loginPass").value;
+      await loginWith(username, password);
+    }
+
+    async function loginWith(username, password) {
+      const status = document.getElementById("status");
+      const btn = document.getElementById("loginBtn");
+
+      if (!username || !password) {
+        status.textContent = "Enter username and password";
+        status.className = "status err";
+        return;
+      }
+
+      btn.disabled = true;
+      status.textContent = "Logging in…";
+      status.className = "status";
+
+      try {
+        const form = new URLSearchParams();
+        form.append("username", username);
+        form.append("password", password);
+
+        const res = await fetch("/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: form
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || "Login failed");
+        }
+
+        // Save token
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("username", username);
+
+        status.textContent = "Success! Redirecting…";
+        status.className = "status ok";
+
+        // Go to main app
+        setTimeout(() => {
+          window.location.href = "/";   // or "/app.html" if you prefer
+        }, 600);
+
+      } catch (e) {
+        status.textContent = e.message;
+        status.className = "status err";
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -85,6 +85,26 @@
       background: #444;
       color: #888;
     }
+    .quick {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .quick button {
+      background: #1a1d27;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 4px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .quick button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
     .switch {
       text-align: center;
       margin-top: 20px;
@@ -105,6 +125,12 @@
     .status.err { color: var(--red); }
     .status.ok { color: var(--accent); }
     .hidden { display: none; }
+    .hint {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 14px;
+    }
   </style>
 </head>
 <body>
@@ -117,16 +143,23 @@
     <!-- LOGIN FORM -->
     <div id="loginForm">
       <label>Username</label>
-      <input type="text" id="loginUser" placeholder="username" autocomplete="username">
+      <input type="text" id="loginUser" placeholder="bob / mark / rosco" autocomplete="username">
 
       <label>Password</label>
       <input type="password" id="loginPass" placeholder="password" autocomplete="current-password">
 
       <button class="btn" id="loginBtn" onclick="doLogin()">LOGIN</button>
 
+      <div class="quick">
+        <button onclick="quickLogin('bob','bob123')">Bob</button>
+        <button onclick="quickLogin('mark','mark123')">Mark</button>
+        <button onclick="quickLogin('rosco','rosco123')">Rosco</button>
+      </div>
+
       <div class="switch">
         No account? <a href="#" onclick="showRegister()">Register</a>
       </div>
+      <div class="hint">Default passwords: bob123 / mark123 / rosco123</div>
     </div>
 
     <!-- REGISTER FORM -->
@@ -164,6 +197,12 @@
       document.getElementById("status").textContent = "";
     }
 
+    function quickLogin(user, pass) {
+      document.getElementById("loginUser").value = user;
+      document.getElementById("loginPass").value = pass;
+      doLogin();
+    }
+
     async function doRegister() {
       const email = document.getElementById("regEmail").value.trim();
       const username = document.getElementById("regUser").value.trim();
@@ -191,17 +230,11 @@
         });
 
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.detail || "Registration failed");
-        }
+        if (!res.ok) throw new Error(data.detail || "Registration failed");
 
         status.textContent = "Account created! Logging in…";
         status.className = "status ok";
-
-        // Auto login after register
         await loginWith(username, password);
-
       } catch (e) {
         status.textContent = e.message;
         status.className = "status err";
@@ -241,23 +274,17 @@
         });
 
         const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Login failed");
 
-        if (!res.ok) {
-          throw new Error(data.detail || "Login failed");
-        }
-
-        // Save token
         localStorage.setItem("token", data.access_token);
         localStorage.setItem("username", username);
 
         status.textContent = "Success! Redirecting…";
         status.className = "status ok";
 
-        // Go to main app
         setTimeout(() => {
-          window.location.href = "/";   // or "/app.html" if you prefer
-        }, 600);
-
+          window.location.href = "/team";
+        }, 500);
       } catch (e) {
         status.textContent = e.message;
         status.className = "status err";

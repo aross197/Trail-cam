@@ -1,1 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AREA 51 TACTICAL – Camera Setup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
+    :root {
+      --accent: #39FF14;
+      --bg: #0a0a0c;
+      --card: #14141a;
+      --border: #222;
+      --text: #e0e0e0;
+      --cyan: #00ffff;
+      --red: #ff3333;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+      padding: 16px;
+      padding-bottom: 80px;
+      line-height: 1.5;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: var(--accent);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-size: 1.4rem;
+    }
+    h2 {
+      color: var(--accent);
+      font-size: 1.1rem;
+      margin: 24px 0 10px;
+      font-family: "Space Grotesk", system-ui, sans-serif;
+    }
+    .sub {
+      color: #888;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .model-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      background: var(--accent);
+      color: #000;
+      font-weight: 900;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.9rem;
+    }
+    .step-body { flex: 1; font-size: 0.95rem; }
+    .step-body strong { color: var(--cyan); }
+    .tip {
+      background: #0f1a0f;
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin: 12px 0;
+    }
+    .warn {
+      background: #1a100f;
+      border-left: 4px solid var(--red);
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin: 12px 0;
+    }
+    ul { padding-left: 18px; margin: 8px 0; }
+    li { margin-bottom: 4px; font-size: 0.9rem; }
+    .btn {
+      display: block;
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      font-weight: 800;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      margin: 12px 0;
+      font-size: 1rem;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn-secondary {
+      background: #2d3436;
+      color: var(--text);
+    }
+    .team {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .team span {
+      background: #1a1d27;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 8px;
+      gap: 6px;
+    }
+    .bottom-nav a {
+      flex: 1;
+      text-align: center;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.7rem;
+      padding: 6px 2px;
+    }
+    .bottom-nav a span { display: block; font-size: 1.1rem; }
+    code {
+      background: #0f1117;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: var(--cyan);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AREA 51</h1>
+  </div>
+  <div class="sub">TEAM CAMERA SETUP</div>
 
+  <div class="card">
+    <div class="model-badge">STANDARD TEAM CAMERA</div>
+    <h2 style="margin-top:0;">XTU SV-TCQSW</h2>
+    <p style="font-size:0.9rem;color:#aaa;">Solar Trail Camera • 32MP / 2.7K • WiFi + Bluetooth</p>
+    <div class="team">
+      <span>Bob</span>
+      <span>Mark</span>
+      <span>Rosco</span>
+    </div>
+    <p style="font-size:0.8rem;color:#666;margin-top:8px;">All three team members use this model.</p>
+  </div>
+
+  <h2>1. Unbox & Power</h2>
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">Open the housing. Confirm the pre-installed <strong>32GB microSD</strong> is seated.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">(Optional) Insert <strong>4 × AA alkaline</strong> batteries (1.5V only — no rechargeables) for backup.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">Close housing firmly. Slide switch to <strong>TEST</strong>. Screen should light up.</div>
+    </div>
+    <div class="tip">
+      If the screen stays dark, charge the internal battery with the USB-C cable for a few hours first.
+    </div>
+  </div>
+
+  <h2>2. Connect to TrailCam Go App</h2>
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">Download <strong>TrailCam Go</strong> from the App Store or Google Play.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">Turn on phone <strong>Bluetooth</strong> and <strong>Wi-Fi</strong>. Stay close to the camera (under ~15–20 ft).</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">Open the app → tap <strong>+</strong> → choose <strong>Wi-Fi Camera</strong>.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">Select the camera when it appears (usually <code>TrailCam_XXXX</code>). Tap <strong>Join</strong> when your phone asks to connect to its temporary Wi-Fi.</div>
+    </div>
+    <div class="tip">
+      The camera creates its own Wi-Fi hotspot. It does <strong>not</strong> join your home network. Range is ~49 ft officially.
+    </div>
+  </div>
+
+  <h2>3. After Connection</h2>
+  <div class="card">
+    <ul>
+      <li>Set date & time</li>
+      <li>Choose Photo / Video / Photo+Video mode</li>
+      <li>Set resolution (32MP photo / 2.7K video recommended)</li>
+      <li>Adjust PIR sensitivity (Medium is a good start)</li>
+      <li>Format the SD card in the app or camera menu</li>
+    </ul>
+    <div class="warn">
+      When finished, switch from <strong>TEST</strong> to <strong>ON</strong>. The screen turns off and the camera enters motion-detection mode.
+    </div>
+  </div>
+
+  <h2>4. Field Tips</h2>
+  <div class="card">
+    <ul>
+      <li>Mount 0.5–2 m high, angled slightly down</li>
+      <li>Face north or south (avoid east/west sun glare)</li>
+      <li>Give the solar panel clear sky exposure</li>
+      <li>Clear lens and PIR sensor of debris regularly</li>
+    </ul>
+  </div>
+
+  <a class="btn" href="index.html">← Back to Camera Link</a>
+  <a class="btn btn-secondary" href="team.html">Team Dashboard</a>
+
+  <div class="bottom-nav">
+    <a href="index.html"><span>🔗</span>Link</a>
+    <a href="setup.html"><span>📷</span>Setup</a>
+    <a href="team.html"><span>🏠</span>Team</a>
+    <a href="login.html"><span>🔑</span>Login</a>
+  </div>
+</body>
+</html>

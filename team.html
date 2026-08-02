@@ -348,7 +348,13 @@
       document.getElementById(name).classList.add("active");
       event.target.classList.add("active");
 
-      if (name === "chat") loadChat();
+      // Real-time chat: start polling only when Chat tab is open
+      if (name === "chat") {
+        startChatPolling();
+      } else {
+        stopChatPolling();
+      }
+
       if (name === "compare") loadCompareOptions();
       if (name === "graphs") loadGraphs();
       if (name === "map") initMap();
@@ -410,31 +416,75 @@
       setTimeout(() => s.textContent = "", 2500);
     }
 
-    // ---------- CHAT ----------
-    async function loadChat() {
+    // ---------- CHAT (with real-time updates) ----------
+    let chatInterval = null;
+    let lastMessageCount = 0;
+
+    async function loadChat(silent = false) {
       const box = document.getElementById("chatBox");
-      const res = await fetch("/chat", { headers: authHeaders() });
-      const msgs = await res.json();
-      const me = localStorage.getItem("username");
-      box.innerHTML = msgs.map(m => {
-        const cls = m.sender_name === me ? "me" : "other";
-        const time = new Date(m.created_at).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-        return `<div class="msg ${cls}"><div class="who">${m.sender_name}</div>${m.content}<div class="time">${time}</div></div>`;
-      }).join("");
-      box.scrollTop = box.scrollHeight;
+      try {
+        const res = await fetch("/chat", { headers: authHeaders() });
+        if (!res.ok) return;
+        const msgs = await res.json();
+        const me = localStorage.getItem("username");
+
+        // Only re-render if something changed (or first load)
+        if (msgs.length !== lastMessageCount || !silent) {
+          lastMessageCount = msgs.length;
+          const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+
+          box.innerHTML = msgs.map(m => {
+            const cls = m.sender_name === me ? "me" : "other";
+            const time = new Date(m.created_at).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+            return `<div class="msg ${cls}"><div class="who">${m.sender_name}</div>${m.content}<div class="time">${time}</div></div>`;
+          }).join("");
+
+          // Keep scrolled to bottom if user was already at bottom
+          if (wasAtBottom || !silent) {
+            box.scrollTop = box.scrollHeight;
+          }
+        }
+      } catch (e) {
+        console.error("Chat load error", e);
+      }
+    }
+
+    function startChatPolling() {
+      stopChatPolling();
+      loadChat();                         // immediate load
+      chatInterval = setInterval(() => {
+        loadChat(true);                   // silent poll every 3 seconds
+      }, 3000);
+    }
+
+    function stopChatPolling() {
+      if (chatInterval) {
+        clearInterval(chatInterval);
+        chatInterval = null;
+      }
     }
 
     async function sendChat() {
       const input = document.getElementById("chatMsg");
       const content = input.value.trim();
       if (!content) return;
-      await fetch("/chat", {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ content })
-      });
+
       input.value = "";
-      loadChat();
+      input.focus();
+
+      try {
+        await fetch("/chat", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ content })
+        });
+        // Force refresh right after sending
+        lastMessageCount = 0;
+        await loadChat();
+      } catch (e) {
+        document.getElementById("status").textContent = "Failed to send";
+        setTimeout(() => document.getElementById("status").textContent = "", 2000);
+      }
     }
 
     // ---------- COMPARE ----------
@@ -483,7 +533,7 @@
           labels: act.map(a => a.date),
           datasets: [{ label: "Uploads", data: act.map(a => a.count), borderColor: "#39FF14", tension: 0.3 }]
         },
-        options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#888" } }, y: { ticks: { color: "#888" } } } }
+        options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#888" } }, y: { ticks: { color: "#888" } } }
       });
 
       if (charts.species) charts.species.destroy();
@@ -503,7 +553,7 @@
           labels: us.map(u => u.user),
           datasets: [{ label: "Files", data: us.map(u => u.count), backgroundColor: "#39FF14" }]
         },
-        options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#888" } }, y: { ticks: { color: "#888" } } } }
+        options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#888" } }, y: { ticks: { color: "#888" } } }
       });
     }
 

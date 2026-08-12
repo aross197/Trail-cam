@@ -1,166 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AREA 51 TACTICAL • CAMERA LINK</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: #0d1117; 
-            color: #c9d1d9; 
-            text-align: center; 
-            padding: 20px;
-            margin: 0;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>CODM NUK3 — Live Match Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bg: '#0a0a0f',
+            card: '#12121a',
+            border: '#1f1f2e',
+            muted: '#8b8b9e',
+            accent: '#ff4d00',
+            'accent-dim': '#cc3d00',
+            live: '#ff0033',
+          }
         }
-        h1 { 
-            color: #3fb950; 
-            font-family: monospace; 
-            font-size: 26px; 
-            margin-bottom: 2px;
-        }
-        .sub { 
-            color: #8b949e; 
-            font-size: 11px; 
-            letter-spacing: 2px; 
-            margin-bottom: 20px; 
-        }
-        .card { 
-            background: #161b22; 
-            border-radius: 12px; 
-            padding: 20px; 
-            max-width: 420px; 
-            margin: 0 auto; 
-            border: 1px solid #30363d; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-        }
-        .step-box {
-            background: #0d1117;
-            border-left: 4px solid #238636;
-            text-align: left;
-            padding: 12px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            color: #58a6ff; 
-            font-weight: 600; 
-            font-size: 14px;
-        }
-        input[type="text"] { 
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: 1px solid #30363d; 
-            background: #0d1117; 
-            color: #3fb950; 
-            font-family: monospace;
-            font-size: 18px; 
-            text-align: center; 
-            margin-bottom: 15px; 
-            outline: none;
-        }
-        .btn-main { 
-            display: block; 
-            width: 100%; 
-            background: #238636; 
-            color: #ffffff; 
-            border: none; 
-            padding: 16px 0; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            text-decoration: none; 
-        }
-        .btn-main:active { background: #2ea043; }
-        .preset-title {
-            font-size: 12px;
-            color: #8b949e;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        .preset-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-        .btn-sub {
-            background: #21262d;
-            border: 1px solid #30363d;
-            color: #58a6ff;
-            padding: 10px 0;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-sub:active { background: #30363d; }
-        .setup-link {
-            display: block;
-            margin-top: 14px;
-            color: #58a6ff;
-            font-size: 13px;
-            text-decoration: none;
-        }
-        .setup-link:hover { text-decoration: underline; }
-    </style>
+      }
+    }
+  </script>
+  <style>
+    body { background: #0a0a0f; color: #e8e8ed; font-family: system-ui, -apple-system, sans-serif; }
+    .live-pulse { animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .glow-live { box-shadow: 0 0 15px rgba(255,0,51,.4); }
+    .glow-accent { box-shadow: 0 0 20px rgba(255,77,0,.3); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #12121a; }
+    ::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 3px; }
+  </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <h1>AREA 51 TACTICAL</h1>
-    <div class="sub">UNIVERSAL TRAILCAM LINK</div>
-
-    <div class="card">
-        
-        <div class="step-box">
-            <strong>Quick Start:</strong><br>
-            1. Connect phone Wi-Fi to <i>TrailCam_XXXX</i><br>
-            2. Tap <b>CONNECT TO CAMERA LOGIN</b> below.
-        </div>
-
-        <label for="cameraIp">Active Camera Target IP:</label>
-        <input type="text" id="cameraIp" value="192.168.1.1" placeholder="192.168.1.1">
-
-        <!-- Primary Launch Button -->
-        <button class="btn-main" onclick="openLogin()">CONNECT TO CAMERA LOGIN</button>
-
-        <div class="preset-title">Alternate Model IPs (If Default Fails):</div>
-        <div class="preset-grid">
-            <button class="btn-sub" onclick="setAndLaunch('192.168.1.1')">192.168.1.1</button>
-            <button class="btn-sub" onclick="setAndLaunch('192.168.8.1')">192.168.8.1</button>
-            <button class="btn-sub" onclick="setAndLaunch('192.168.43.1')">192.168.43.1</button>
-        </div>
-
-        <a href="setup.html" class="setup-link">📷 Team Camera Setup Guide (XTU SV-TCQSW)</a>
-
+  <header class="border-b border-border bg-card/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-3 py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 cursor-pointer" onclick="show('home')">
+        <span class="text-xl font-black tracking-tighter text-accent">NUK3</span>
+        <span class="text-[10px] text-muted hidden sm:inline">CODM LIVE</span>
+      </div>
+      <nav class="flex gap-1 text-xs sm:text-sm font-medium overflow-x-auto items-center">
+        <button onclick="show('home')" class="px-2.5 py-1.5 rounded hover:bg-white/5 text-muted">Home</button>
+        <button onclick="show('bracket')" class="px-2.5 py-1.5 rounded hover:bg-white/5 text-muted">Bracket</button>
+        <button onclick="show('leaderboard')" class="px-2.5 py-1.5 rounded hover:bg-white/5 text-muted">Board</button>
+        <button onclick="show('profile')" class="px-2.5 py-1.5 rounded hover:bg-white/5 text-muted">My Stats</button>
+        <button onclick="show('friends')" class="px-2.5 py-1.5 rounded hover:bg-white/5 text-muted">Friends</button>
+        <button onclick="show('observer')" class="px-2.5 py-1.5 rounded bg-accent/10 text-accent">Observer</button>
+        <span id="userBadge" class="ml-1 text-xs text-muted"></span>
+      </nav>
     </div>
+  </header>
 
-    <script>
-        function getTargetIp() {
-            let rawIp = document.getElementById('cameraIp').value.trim();
-            let cleanIp = rawIp.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-            return cleanIp || '192.168.1.1';
-        }
+  <main class="flex-1 max-w-6xl mx-auto w-full px-3 py-5" id="app"></main>
 
-        function openLogin() {
-            const ip = getTargetIp();
-            // Forces immediate browser tab transition to the local camera HTTP web server
-            window.location.href = `http://${ip}/`;
-        }
+  <footer class="border-t border-border py-4 text-center text-xs text-muted">
+    <p><span class="text-accent font-bold">CODM NUK3</span> — Old-school community energy, modern competitive system.</p>
+  </footer>
 
-        function setAndLaunch(ip) {
-            document.getElementById('cameraIp').value = ip;
-            window.location.href = `http://${ip}/`;
-        }
-    </script>
+<script>
+const teams = [
+  { id:'t1', name:'Nova Esports', tag:'NOVA', color:'#ff4d00', wins:4, losses:1, mapWins:9, mapLosses:4, points:12,
+    players:[{name:'NovaKing',k:18,d:9,a:7,score:2840,obj:420},{name:'Shadow',k:14,d:11,a:9,score:2410,obj:380},{name:'Blaze',k:12,d:8,a:5,score:2190,obj:290},{name:'Viper',k:9,d:12,a:11,score:1980,obj:510},{name:'Ace',k:11,d:7,a:6,score:2050,obj:340}]},
+  { id:'t2', name:'Phantom Legion', tag:'PHNTM', color:'#7c3aed', wins:3, losses:2, mapWins:8, mapLosses:5, points:9,
+    players:[{name:'Ghost',k:16,d:10,a:4,score:2650,obj:310},{name:'Reaper',k:13,d:9,a:8,score:2380,obj:450},{name:'Spectre',k:10,d:13,a:7,score:2010,obj:280},{name:'Wraith',k:15,d:8,a:5,score:2520,obj:390},{name:'Shade',k:8,d:11,a:12,score:1890,obj:520}]},
+  { id:'t3', name:'Iron Wolves', tag:'IRON', color:'#22c55e', wins:3, losses:1, mapWins:7, mapLosses:3, points:9,
+    players:[{name:'Alpha',k:17,d:8,a:6,score:2710,obj:360},{name:'Beta',k:11,d:10,a:9,score:2230,obj:410},{name:'Delta',k:14,d:7,a:4,score:2480,obj:270},{name:'Omega',k:9,d:12,a:8,score:1950,obj:480},{name:'Sigma',k:12,d:9,a:7,score:2310,obj:330}]},
+  { id:'t4', name:'Crimson Tide', tag:'CRIM', color:'#ef4444', wins:2, losses:2, mapWins:5, mapLosses:5, points:6,
+    players:[{name:'Tide',k:13,d:11,a:5,score:2290,obj:300},{name:'Surge',k:10,d:9,a:8,score:2140,obj:370},{name:'Wave',k:8,d:13,a:6,score:1820,obj:250},{name:'Riptide',k:15,d:8,a:4,score:2560,obj:420},{name:'Storm',k:7,d:10,a:10,score:1910,obj:490}]},
+  { id:'t5', name:'Apex Predators', tag:'APEX', color:'#eab308', wins:2, losses:3, mapWins:6, mapLosses:7, points:6,
+    players:[{name:'Hunter',k:14,d:10,a:5,score:2420,obj:340},{name:'Predator',k:11,d:12,a:7,score:2080,obj:290},{name:'Fang',k:9,d:8,a:9,score:1970,obj:410},{name:'Claw',k:16,d:7,a:3,score:2610,obj:280},{name:'Hunt',k:6,d:14,a:11,score:1750,obj:460}]},
+  { id:'t6', name:'Void Walkers', tag:'VOID', color:'#06b6d4', wins:1, losses:3, mapWins:3, mapLosses:7, points:3,
+    players:[{name:'Null',k:10,d:13,a:4,score:1930,obj:220},{name:'Zero',k:8,d:11,a:7,score:1810,obj:310},{name:'Abyss',k:12,d:9,a:5,score:2150,obj:270},{name:'Eclipse',k:7,d:12,a:8,score:1720,obj:380},{name:'Rift',k:9,d:10,a:6,score:1890,obj:250}]},
+  { id:'t7', name:'Thunder Strike', tag:'THDR', color:'#f97316', wins:4, losses:0, mapWins:10, mapLosses:2, points:12,
+    players:[{name:'Bolt',k:19,d:6,a:5,score:2920,obj:390},{name:'Flash',k:15,d:8,a:8,score:2580,obj:440},{name:'Spark',k:13,d:7,a:6,score:2410,obj:320},{name:'Thunder',k:11,d:9,a:9,score:2260,obj:470},{name:'Strike',k:16,d:5,a:4,score:2740,obj:360}]},
+  { id:'t8', name:'Shadow Syndicate', tag:'SHDW', color:'#64748b', wins:1, losses:4, mapWins:4, mapLosses:9, points:3,
+    players:[{name:'Night',k:11,d:12,a:5,score:2040,obj:280},{name:'Cloak',k:8,d:14,a:7,score:1760,obj:240},{name:'Dagger',k:13,d:9,a:4,score:2310,obj:310},{name:'Silent',k:6,d:11,a:10,score:1680,obj:400},{name:'Assassin',k:10,d:10,a:6,score:1980,obj:260}]},
+];
+const getTeam = id => teams.find(t => t.id === id);
 
-</body>
-</html>
+let matches = [
+  {id:'m1', round:'Semifinals', teamA:getTeam('t1'), teamB:getTeam('t2'), scoreA:1, scoreB:1, mapScoreA:78, mapScoreB:72, currentMap:'Crossfire', currentRound:3, status:'live', bestOf:5, observer:'NUK3_Obs_01',
+    maps:[{name:'Nuketown',scoreA:150,scoreB:132,winner:'A'},{name:'Firing Range',scoreA:98,scoreB:150,winner:'B'},{name:'Crossfire',scoreA:78,scoreB:72}]},
+  {id:'m2', round:'Semifinals', teamA:getTeam('t3'), teamB:getTeam('t7'), scoreA:0, scoreB:2, mapScoreA:0, mapScoreB:0, currentMap:'Standoff', currentRound:1, status:'live', bestOf:5, observer:'NUK3_Obs_02',
+    maps:[{name:'Raid',scoreA:110,scoreB:150,winner:'B'},{name:'Summit',scoreA:89,scoreB:150,winner:'B'},{name:'Standoff',scoreA:0,scoreB:0}]},
+  {id:'m3', round:'Quarterfinals', teamA:getTeam('t4'), teamB:getTeam('t5'), scoreA:2, scoreB:1, mapScoreA:0, mapScoreB:0, currentMap:'Terminal', currentRound:0, status:'completed', bestOf:5, observer:null,
+    maps:[{name:'Highrise',scoreA:150,scoreB:120,winner:'A'},{name:'Scrapyard',scoreA:99,scoreB:150,winner:'B'},{name:'Crash',scoreA:150,scoreB:88,winner:'A'}]},
+  {id:'m4', round:'Grand Final', teamA:getTeam('t1'), teamB:getTeam('t7'), scoreA:0, scoreB:0, mapScoreA:0, mapScoreB:0, currentMap:'Nuketown', currentRound:0, status:'upcoming', bestOf:7, observer:null, maps:[]},
+];
+
+const defaultProfile = {
+  username:'', password:'', displayName:'', uid:'',
+  kd:1.42, wins:128, losses
